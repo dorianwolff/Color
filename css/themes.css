@@ -1,0 +1,191 @@
+/* Color Variables */
+:root {
+    /* Base Colors */
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --primary-light: #818cf8;
+    --secondary: #64748b;
+    --secondary-dark: #475569;
+    --secondary-light: #94a3b8;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --info: #3b82f6;
+    
+    /* Card Colors */
+    --card-black: #1e293b;
+    --card-red: #ef4444;
+    --card-orange: #f97316;
+    --card-yellow: #eab308;
+    --card-green: #22c55e;
+    --card-blue: #3b82f6;
+    --card-purple: #a855f7;
+    --card-white: #f8fafc;
+    
+    /* Background Colors */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f1f5f9;
+    --bg-tertiary: #e2e8f0;
+    --bg-dark: #0f172a;
+    
+    /* Text Colors */
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-light: #94a3b8;
+    --text-white: #ffffff;
+    
+    /* Border Colors */
+    --border-light: #e2e8f0;
+    --border-dark: #cbd5e1;
+    
+    /* Shadow Colors */
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --shadow-color-dark: rgba(0, 0, 0, 0.2);
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+    --bg-primary: #121212;
+    --bg-secondary: #1e1e1e;
+    --bg-tertiary: #242424;
+    
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --text-light: #808080;
+    
+    --border-light: #333333;
+    --border-dark: #404040;
+    
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --shadow-color-dark: rgba(0, 0, 0, 0.4);
+
+    /* Override other colors for dark theme */
+    --primary: #6C63FF;
+    --primary-dark: #5952cc;
+    --primary-light: #8B85FF;
+    --secondary: #4a4a4a;
+    --secondary-dark: #333333;
+    --secondary-light: #666666;
+}
+
+/* Card Styles */
+.game-card {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-light);
+    box-shadow: 0 4px 6px var(--shadow-color);
+    transition: all 0.3s ease;
+}
+
+.game-card:hover {
+    box-shadow: 0 8px 12px var(--shadow-color-dark);
+}
+
+/* Button Styles */
+.btn {
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: var(--text-white);
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+}
+
+.btn-secondary {
+    background: var(--secondary);
+    color: var(--text-white);
+}
+
+.btn-secondary:hover {
+    background: var(--secondary-dark);
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: var(--text-white);
+}
+
+/* Input Styles */
+.input {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* Card Effects */
+.card-glow {
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.game-card:hover .card-glow {
+    opacity: 0.5;
+}
+
+.glow-red { background: radial-gradient(circle at center, var(--card-red) 0%, transparent 70%); }
+.glow-orange { background: radial-gradient(circle at center, var(--card-orange) 0%, transparent 70%); }
+.glow-yellow { background: radial-gradient(circle at center, var(--card-yellow) 0%, transparent 70%); }
+.glow-green { background: radial-gradient(circle at center, var(--card-green) 0%, transparent 70%); }
+.glow-blue { background: radial-gradient(circle at center, var(--card-blue) 0%, transparent 70%); }
+.glow-purple { background: radial-gradient(circle at center, var(--card-purple) 0%, transparent 70%); }
+.glow-white { background: radial-gradient(circle at center, var(--card-white) 0%, transparent 70%); }
+
+/* Glass Effect */
+.glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .glass {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradients */
+.gradient-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+}
+
+.gradient-secondary {
+    background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);
+}
+
+/* Component-specific themes */
+.stat-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px var(--shadow-color);
+}
+
+.achievement-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid var(--border-light);
+}
+
+.feature-card {
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 8px 16px var(--shadow-color);
+} 

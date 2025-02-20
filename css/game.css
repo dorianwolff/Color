@@ -1,0 +1,327 @@
+/* Game Container */
+.game-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+    padding: 2rem;
+    gap: 2rem;
+}
+
+.game-board {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    box-shadow: var(--shadow-lg);
+    min-height: 0;
+}
+
+/* Player Sections */
+.player-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.ai-section {
+    flex-direction: column-reverse;
+}
+
+/* Player Info */
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+}
+
+.avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--primary);
+}
+
+.player-details {
+    flex: 1;
+}
+
+.player-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.life-total {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Game Zones */
+.game-zones {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.zone-count {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Deck Zone */
+.deck-zone {
+    position: relative;
+    width: 100px;
+    height: 140px;
+}
+
+.card-back {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    background-image: linear-gradient(45deg, var(--primary) 25%, transparent 25%),
+                    linear-gradient(-45deg, var(--primary) 25%, transparent 25%),
+                    linear-gradient(45deg, transparent 75%, var(--primary) 75%),
+                    linear-gradient(-45deg, transparent 75%, var(--primary) 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+/* Hand Zone */
+.hand-zone {
+    position: relative;
+    min-height: 140px;
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.player-hand, .ai-hand {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.ai-hand .card {
+    background: var(--bg-tertiary);
+}
+
+/* Champion Zone */
+.champion-zone {
+    position: relative;
+    width: 100px;
+    height: 140px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    border: 2px dashed var(--border);
+}
+
+.player-champion-zone, .ai-champion-zone {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Tomb Zone */
+.tomb-zone {
+    position: relative;
+    width: 100px;
+    height: 140px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.tomb-zone:hover {
+    transform: translateY(-4px);
+}
+
+/* Center Section */
+.center-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.phase-indicator {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+/* Cards */
+.card {
+    width: 100px;
+    height: 140px;
+    border-radius: var(--radius-sm);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-size: cover;
+    background-position: center;
+    box-shadow: var(--shadow-md);
+}
+
+.card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
+}
+
+.card-glow {
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    opacity: 0.6;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Color Glows */
+.glow-black { background: radial-gradient(circle at center, var(--card-black) 0%, transparent 70%); }
+.glow-red { background: radial-gradient(circle at center, var(--card-red) 0%, transparent 70%); }
+.glow-orange { background: radial-gradient(circle at center, var(--card-orange) 0%, transparent 70%); }
+.glow-yellow { background: radial-gradient(circle at center, var(--card-yellow) 0%, transparent 70%); }
+.glow-green { background: radial-gradient(circle at center, var(--card-green) 0%, transparent 70%); }
+.glow-blue { background: radial-gradient(circle at center, var(--card-blue) 0%, transparent 70%); }
+.glow-purple { background: radial-gradient(circle at center, var(--card-purple) 0%, transparent 70%); }
+.glow-white { background: radial-gradient(circle at center, var(--card-white) 0%, transparent 70%); }
+
+/* Card Effects */
+.card-effects {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    border-bottom-left-radius: var(--radius-sm);
+    border-bottom-right-radius: var(--radius-sm);
+}
+
+.card:hover .card-effects {
+    opacity: 1;
+}
+
+/* Tomb Pile Modal */
+.tomb-pile-modal {
+    max-width: 800px;
+    width: 90%;
+}
+
+.tomb-pile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Game Over Message */
+.game-over-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg-secondary);
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+}
+
+.game-over-message h2 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .game-container {
+        padding: 1rem;
+    }
+    
+    .game-board {
+        padding: 1.5rem;
+    }
+    
+    .game-zones {
+        gap: 1rem;
+    }
+    
+    .card {
+        width: 90px;
+        height: 126px;
+    }
+}
+
+@media (max-width: 768px) {
+    .game-zones {
+        grid-template-columns: auto 1fr auto;
+    }
+    
+    .tomb-zone {
+        display: none;
+    }
+    
+    .card {
+        width: 80px;
+        height: 112px;
+    }
+}
+
+@media (max-width: 480px) {
+    .game-container {
+        padding: 0.5rem;
+    }
+    
+    .game-board {
+        padding: 1rem;
+    }
+    
+    .card {
+        width: 70px;
+        height: 98px;
+    }
+    
+    .player-info {
+        padding: 0.5rem;
+    }
+    
+    .avatar {
+        width: 40px;
+        height: 40px;
+    }
+} 
