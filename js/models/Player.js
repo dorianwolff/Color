@@ -6,6 +6,7 @@ class Player {
         this.deck = deck.clone();
         this.hand = [];
         this.championZone = [];
+        this.championStack = []; // Stack of cards in the champion zone
         this.tombPile = [];
     }
     
@@ -16,6 +17,7 @@ class Player {
         this.deck.shuffle();
         this.hand = [];
         this.championZone = [];
+        this.championStack = [];
         this.tombPile = [];
     }
     
@@ -56,11 +58,29 @@ class Player {
         }
         
         const card = this.hand.splice(cardIndex, 1)[0];
-        this.championZone.push(card);
+        
+        // If there's already a card in the champion zone, stack effects
+        if (this.championZone.length > 0) {
+            const currentCard = this.championZone[0];
+            this.championStack.push(card);
+            
+            // Stack the effects
+            card.currentEffects.forEach(effect => {
+                if (effect !== CardEffect.NONE) {
+                    currentCard.addEffect(effect, CardEffect.getDescription(effect));
+                }
+            });
+            
+            // Update the color to the new card's color
+            currentCard.updateColor(card.currentColor);
+        } else {
+            this.championZone.push(card);
+        }
         
         gameEvents.emit(GameEvents.CARD_PLAYED, {
             player: this.name,
-            card: card
+            card: card,
+            isStacked: this.championStack.length > 0
         });
         
         return card;
@@ -70,8 +90,14 @@ class Player {
     moveToTomb(card) {
         const zoneIndex = this.championZone.findIndex(c => c.id === card.id);
         if (zoneIndex !== -1) {
+            // Move the main card and all stacked cards to tomb
             this.championZone.splice(zoneIndex, 1);
             this.tombPile.push(card);
+            
+            // Move all stacked cards to tomb
+            while (this.championStack.length > 0) {
+                this.tombPile.push(this.championStack.pop());
+            }
         }
     }
     
@@ -105,6 +131,19 @@ class Player {
     // Get the number of cards in tomb
     getTombSize() {
         return this.tombPile.length;
+    }
+    
+    // Get all current effects on the champion
+    getChampionEffects() {
+        if (this.championZone.length === 0) {
+            return [];
+        }
+        return this.championZone[0].currentEffects;
+    }
+    
+    // Get all stacked cards in the champion zone
+    getChampionStack() {
+        return [...this.championStack];
     }
     
     // Create HTML element for player info
@@ -167,11 +206,21 @@ class Player {
         championZone.className = 'card-zone champion-zone';
         
         if (this.championZone.length > 0) {
-            const championCard = this.championZone[this.championZone.length - 1];
-            championZone.appendChild(championCard.toHTML({
+            const championCard = this.championZone[0];
+            const cardElement = championCard.toHTML({
                 showBack: isOpponent,
                 showEffects: !isOpponent
-            }));
+            });
+            
+            // Add stack count if there are stacked cards
+            if (this.championStack.length > 0) {
+                const stackCount = document.createElement('div');
+                stackCount.className = 'stack-count';
+                stackCount.textContent = `+${this.championStack.length}`;
+                cardElement.appendChild(stackCount);
+            }
+            
+            championZone.appendChild(cardElement);
         }
         
         zonesSection.appendChild(championZone);

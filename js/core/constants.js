@@ -11,8 +11,12 @@ const CardColor = {
     
     fromValue(value) {
         return Object.values(this).find(color => 
-            color.value === Math.max(0, Math.min(7, Math.floor(value)))
+            color.value === Math.max(0, Math.min(7, value))
         ) || this.BLACK;
+    },
+
+    isOutOfBounds(value) {
+        return value <= 0 || value >= 7;
     }
 };
 

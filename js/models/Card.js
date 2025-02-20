@@ -66,12 +66,12 @@ class Card {
     
     // Get the card's current color name
     getColorName() {
-        return CardColor.toString(this.currentColor);
+        return this.currentColor.name;
     }
     
     // Get the card's base color name
     getBaseColorName() {
-        return CardColor.toString(this.baseColor);
+        return this.baseColor.name;
     }
     
     // Check if the card is defeated (out of bounds)
@@ -145,7 +145,7 @@ class Card {
             
             const colorInfo = document.createElement('div');
             colorInfo.className = 'card-color';
-            colorInfo.textContent = `Color: ${this.getColorName()} (${this.currentColor})`;
+            colorInfo.textContent = `Color: ${this.getColorName()} (${this.currentColor.value})`;
             tooltip.appendChild(colorInfo);
             
             if (this.currentEffects.length > 0) {

@@ -133,9 +133,25 @@ class Game {
     
     // Perform a direct attack
     directAttack(card) {
+        if (this.turnCount === 1 && this.currentPlayer === this.startingPlayer) {
+            throw new Error('Cannot attack on first turn when starting the game');
+        }
+
         const opponent = this.currentPlayer === this.player ? this.ai : this.player;
-        opponent.changeLife(-card.currentColor);
         
+        // Can only direct attack if opponent has no champion
+        if (opponent.championZone.length > 0) {
+            throw new Error('Cannot direct attack when opponent has a champion');
+        }
+
+        opponent.changeLife(-card.currentColor.value);
+        
+        gameEvents.emit(GameEvents.ATTACK_RESOLVED, {
+            type: 'DIRECT',
+            attacker: card,
+            damage: card.currentColor.value
+        });
+
         if (opponent.hasLost()) {
             this.endGame();
         }
@@ -143,18 +159,62 @@ class Game {
     
     // Perform a card attack
     cardAttack(attacker, defender) {
+        if (this.turnCount === 1 && this.currentPlayer === this.startingPlayer) {
+            throw new Error('Cannot attack on first turn when starting the game');
+        }
+
         const opponent = this.currentPlayer === this.player ? this.ai : this.player;
         
-        const result = GameUtils.calculateCombatResult(attacker, defender);
+        // Calculate color difference
+        const attackerValue = attacker.currentColor.value;
+        const defenderValue = defender.currentColor.value;
         
-        if (result.attackerDefeated) {
+        // Same color - both are defeated
+        if (attackerValue === defenderValue) {
             this.currentPlayer.moveToTomb(attacker);
+            opponent.moveToTomb(defender);
+            
+            gameEvents.emit(GameEvents.ATTACK_RESOLVED, {
+                type: 'MUTUAL_DEFEAT',
+                attacker: attacker,
+                defender: defender
+            });
+            return;
         }
         
-        if (result.defenderDefeated) {
-            opponent.moveToTomb(defender);
-        } else {
-            defender.updateColor(result.newDefenderColor);
+        const difference = Math.abs(attackerValue - defenderValue);
+        
+        // Attacker has smaller value
+        if (attackerValue < defenderValue) {
+            const newValue = defenderValue + difference;
+            defender.updateColor(CardColor.fromValue(newValue));
+            
+            if (CardColor.isOutOfBounds(newValue)) {
+                opponent.moveToTomb(defender);
+            }
+            
+            gameEvents.emit(GameEvents.ATTACK_RESOLVED, {
+                type: 'DEFENDER_BUFFED',
+                attacker: attacker,
+                defender: defender,
+                difference: difference
+            });
+        }
+        // Attacker has higher value
+        else {
+            const newValue = defenderValue - difference;
+            defender.updateColor(CardColor.fromValue(newValue));
+            
+            if (CardColor.isOutOfBounds(newValue)) {
+                opponent.moveToTomb(defender);
+            }
+            
+            gameEvents.emit(GameEvents.ATTACK_RESOLVED, {
+                type: 'DEFENDER_WEAKENED',
+                attacker: attacker,
+                defender: defender,
+                difference: difference
+            });
         }
     }
     
