@@ -18,25 +18,27 @@ class DeckBuilderPage {
                 page.persistDeckState();
             }
         } else {
-            // Clear any persisted state when creating a new deck
-            localStorage.removeItem('currentDeckBuilderState');
-            
             // Check if we're returning to an in-progress deck build
             const persistedDeck = localStorage.getItem('currentDeckBuilderState');
             if (persistedDeck) {
-                const deckData = JSON.parse(persistedDeck);
-                page.deck = new Deck(deckData.name);
-                page.deck.id = deckData.id;
-                // Create new Card instances from the persisted data
-                page.deck.cards = deckData.cards.map(cardData => 
-                    new Card(
-                        cardData.name,
-                        cardData.baseColor,
-                        cardData.imageNumber,
-                        cardData.baseEffects,
-                        cardData.baseEffectDescriptions
-                    )
-                );
+                try {
+                    const deckData = JSON.parse(persistedDeck);
+                    page.deck = new Deck(deckData.name);
+                    page.deck.id = deckData.id;
+                    // Create new Card instances from the persisted data
+                    page.deck.cards = deckData.cards.map(cardData => 
+                        new Card(
+                            cardData.name,
+                            CardColor[cardData.baseColor.name.toUpperCase()],
+                            cardData.imageNumber,
+                            cardData.baseEffects,
+                            cardData.baseEffectDescriptions
+                        )
+                    );
+                } catch (error) {
+                    console.error('Error loading persisted deck:', error);
+                    localStorage.removeItem('currentDeckBuilderState');
+                }
             }
         }
         
@@ -239,7 +241,7 @@ class DeckBuilderPage {
     }
 
     updateFilteredCards() {
-        this.filteredCards = this.allCards;
+        this.filteredCards = [...this.allCards];
         
         // Apply search filter
         if (this.searchQuery) {
@@ -251,7 +253,7 @@ class DeckBuilderPage {
         // Apply color filter
         if (this.colorFilter) {
             this.filteredCards = this.filteredCards.filter(card => 
-                card.getColorName() === this.colorFilter
+                card.baseColor.name.toUpperCase() === this.colorFilter
             );
         }
         
@@ -356,6 +358,8 @@ class DeckBuilderPage {
 
         this.deck.name = deckName;
         gameStorage.saveDeck(this.deck);
+        // Clear the persisted deck state when saving and exiting
+        localStorage.removeItem('currentDeckBuilderState');
         router.navigate(Routes.DECKS);
     }
 }
