@@ -117,6 +117,61 @@ const CardDatabase = {
                 'Draw a card when played'
             ],
             rarity: 'rare'
+        },
+        {
+            id: 'thorgal',
+            name: 'Thorgal',
+            color: CardColor.ORANGE,
+            imageNumber: 12,
+            effects: ['RUTHLESS'],
+            effectDescriptions: [
+                'Double damage when attacking'
+            ],
+            rarity: 'rare'
+        },
+        {
+            id: 'kriss_de_valnor',
+            name: 'Kriss de Valnor',
+            color: CardColor.YELLOW,
+            imageNumber: 13,
+            effects: ['CATSEYE'],
+            effectDescriptions: [
+                'Double damage when attacking'
+            ],
+            rarity: 'rare'
+        },
+        {
+            id: 'thorgal',
+            name: 'Thorgal',
+            color: CardColor.GREEN,
+            imageNumber: 14,
+            effects: ['RUTHLESS'],
+            effectDescriptions: [
+                'Double damage when attacking'
+            ],
+            rarity: 'rare'
+        },
+        {
+            id: 'butterfly',
+            name: 'Butterfly',
+            color: CardColor.GREEN,
+            imageNumber: 15,
+            effects: ['ILLUSIONS'],
+            effectDescriptions: [
+                'Takes 1 damage when attacked'
+            ],
+            rarity: 'rare'
+        },
+        {
+            id: 'thorgal',
+            name: 'Thorgal',
+            color: CardColor.PURPLE,
+            imageNumber: 16,
+            effects: ['RUTHLESS'],
+            effectDescriptions: [
+                'Double damage when attacking'
+            ],
+            rarity: 'rare'
         }
     ],
 
