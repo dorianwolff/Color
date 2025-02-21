@@ -10,73 +10,193 @@
 .game-board {
     flex: 1;
     display: grid;
-    grid-template-rows: 1fr auto 1fr;
-    gap: 1rem;
+    grid-template-rows: auto 1fr auto;
+    gap: 2rem;
     background: var(--bg-secondary);
     border-radius: var(--radius-lg);
-    padding: 1rem;
+    padding: 2rem;
     box-shadow: var(--shadow-lg);
     min-height: 0;
+    overflow: hidden;
+    position: relative;
 }
 
 /* Player Sections */
 .player-section {
-    display: grid;
-    grid-template-columns: 200px 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
-    padding: 1rem;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Player Info Banners */
+.player-info {
+    position: absolute;
+    display: flex;
     align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+    min-width: 120px;
+    max-width: 160px;
 }
 
-.ai-section {
-    transform: rotate(180deg);
+.ai-info {
+    right: 1rem;
+    top: 1rem;
 }
 
-.ai-section * {
-    transform: rotate(180deg);
+.player-info.player-info {
+    left: 1rem;
+    bottom: 1rem;
 }
 
-/* Game Zones */
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.player-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.player-name {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.life-total {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Game Zones Layout */
 .game-zones {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1rem;
+    grid-template-areas: 
+        "deck hand tomb";
+    grid-template-columns: 150px 1fr 150px;
+    gap: 2rem;
     align-items: center;
     justify-items: center;
+    padding: 1rem;
+    width: 100%;
+    height: 100%;
+}
+
+/* Champion Zones */
+.champion-zones {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    z-index: 5;
+}
+
+.champion-zone {
+    width: 150px;
+    height: 210px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    border: 2px dashed var(--border);
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 /* Center Section */
 .center-section {
+    position: absolute;
+    right: 20%;
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 1rem;
-    padding: 1rem;
-    min-height: 120px;
-    justify-content: center;
+    padding: 1rem 2rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    z-index: 10;
 }
 
 .phase-indicator {
-    font-size: 1.5rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: var(--text-primary);
     text-align: center;
-    padding: 1rem 2rem;
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
-    opacity: 0;
-    transform: translateY(-20px);
 }
 
-.phase-indicator.show {
-    animation: fadeIn 0.5s ease forwards;
+.next-phase-btn {
+    padding: 0.5rem 1.5rem;
+    font-size: 0.9rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-/* Card Zones */
-.deck-zone, .champion-zone, .tomb-zone {
-    width: 100px;
-    height: 140px;
+.next-phase-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+/* Hand Zones */
+.hand-zone {
+    grid-area: hand;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    gap: 1rem;
+    min-height: 220px;
+}
+
+.player-hand, .ai-hand {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: nowrap;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 1rem;
+    width: 100%;
+    max-width: 800px;
+}
+
+.ai-hand {
+    top: 2rem;
+}
+
+.player-hand {
+    bottom: 2rem;
+}
+
+/* Deck and Tomb Zones */
+.deck-zone {
+    grid-area: deck;
+    width: 150px;
+    height: 210px;
     background: var(--bg-tertiary);
     border-radius: var(--radius-sm);
     display: flex;
@@ -85,26 +205,22 @@
     position: relative;
 }
 
-.hand-zone {
+.tomb-zone {
+    grid-area: tomb;
+    width: 150px;
+    height: 210px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 140px;
-    width: 100%;
-    gap: 0.5rem;
-}
-
-.player-hand, .ai-hand {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: center;
-    flex-wrap: wrap;
+    position: relative;
 }
 
 /* Cards */
 .card {
-    width: 100px;
-    height: 140px;
+    width: 150px;
+    height: 210px;
     border-radius: var(--radius-sm);
     position: relative;
     cursor: pointer;
@@ -119,57 +235,57 @@
     box-shadow: var(--shadow-lg);
 }
 
+.card.champion {
+    cursor: pointer;
+}
+
+.card.champion:hover {
+    transform: scale(1.05);
+}
+
 .ai-hand .card {
     background: var(--bg-tertiary);
 }
 
-/* Player Info */
-.player-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-md);
-    width: 100%;
+/* Card Effects and Tooltips */
+.card-effects {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    border-bottom-left-radius: var(--radius-sm);
+    border-bottom-right-radius: var(--radius-sm);
 }
 
-.avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--primary);
+.card:hover .card-effects {
+    opacity: 1;
 }
 
-.player-details {
-    flex: 1;
+.stacked-effects {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.player-name {
-    font-size: 1rem;
+.effects-title {
     font-weight: 600;
-    color: var(--text-primary);
     margin-bottom: 0.25rem;
 }
 
-.life-total {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-primary);
+.stacked-effect {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    margin-top: 0.25rem;
 }
 
-/* Game Zones */
-.game-zones {
-    flex: 1;
-    display: grid;
-    grid-template-columns: auto 1fr auto auto;
-    gap: 1.5rem;
-    align-items: center;
-    justify-content: center;
-    max-width: 800px;
-}
-
+/* Zone Counts */
 .zone-count {
     position: absolute;
     top: -0.5rem;
@@ -183,96 +299,22 @@
     box-shadow: var(--shadow-sm);
 }
 
-/* Deck Zone */
-.deck-zone {
-    position: relative;
-    width: 100px;
-    height: 140px;
+/* AI Section Specific */
+.ai-section {
+    transform: none;
 }
 
-.card-back {
-    width: 100%;
-    height: 100%;
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-md);
-    background-image: linear-gradient(45deg, var(--primary) 25%, transparent 25%),
-                    linear-gradient(-45deg, var(--primary) 25%, transparent 25%),
-                    linear-gradient(45deg, transparent 75%, var(--primary) 75%),
-                    linear-gradient(-45deg, transparent 75%, var(--primary) 75%);
-    background-size: 20px 20px;
-    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+.ai-section .player-info,
+.ai-section .player-details,
+.ai-section .card {
+    transform: none;
 }
 
-/* Hand Zone */
-.hand-zone {
-    position: relative;
-    min-height: 140px;
-    display: flex;
-    justify-content: center;
-    padding: 1rem;
-}
-
-.player-hand, .ai-hand {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-.ai-hand .card {
+.ai-section .card {
     background: var(--bg-tertiary);
 }
 
-/* Champion Zone */
-.champion-zone {
-    position: relative;
-    width: 100px;
-    height: 140px;
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-sm);
-    border: 2px dashed var(--border);
-}
-
-.player-champion-zone, .ai-champion-zone {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-/* Tomb Zone */
-.tomb-zone {
-    position: relative;
-    width: 100px;
-    height: 140px;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-}
-
-.tomb-zone:hover {
-    transform: translateY(-4px);
-}
-
-/* Cards */
-.card {
-    width: 100px;
-    height: 140px;
-    border-radius: var(--radius-sm);
-    position: relative;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background-size: cover;
-    background-position: center;
-    box-shadow: var(--shadow-md);
-}
-
-.card:hover {
-    transform: translateY(-8px);
-    box-shadow: var(--shadow-lg);
-}
-
+/* Color Glows */
 .card-glow {
     position: absolute;
     inset: -2px;
@@ -282,7 +324,6 @@
     z-index: -1;
 }
 
-/* Color Glows */
 .glow-black { background: radial-gradient(circle at center, var(--card-black) 0%, transparent 70%); }
 .glow-red { background: radial-gradient(circle at center, var(--card-red) 0%, transparent 70%); }
 .glow-orange { background: radial-gradient(circle at center, var(--card-orange) 0%, transparent 70%); }
@@ -292,25 +333,19 @@
 .glow-purple { background: radial-gradient(circle at center, var(--card-purple) 0%, transparent 70%); }
 .glow-white { background: radial-gradient(circle at center, var(--card-white) 0%, transparent 70%); }
 
-/* Card Effects */
-.card-effects {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 0.5rem;
-    font-size: 0.8rem;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    pointer-events: none;
-    border-bottom-left-radius: var(--radius-sm);
-    border-bottom-right-radius: var(--radius-sm);
+/* Life Total Glow */
+.player-info {
+    position: relative;
+    overflow: hidden;
 }
 
-.card:hover .card-effects {
-    opacity: 1;
+.player-info::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, var(--life-color, white) 0%, transparent 70%);
+    opacity: 0.3;
+    pointer-events: none;
 }
 
 /* Tomb Pile Modal */
@@ -425,5 +460,56 @@
 }
 
 .card.drawing {
-    animation: drawCard 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: absolute;
+    animation: drawCard 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Prevent hand wiggle */
+.player-hand, .ai-hand {
+    min-height: 140px;
+    padding: 0.5rem;
+}
+
+.card {
+    transition: transform 0.2s ease;
+}
+
+.card:not(.drawing) {
+    animation: none;
+}
+
+/* Starting Player Animation */
+.starting-player-animation {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    animation: fadeInOut 2s ease;
+}
+
+.starting-player-animation .avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 2px solid var(--primary);
+    animation: pulseGlow 1s ease infinite;
+}
+
+.starting-text {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: scale(0.8); }
+    20% { opacity: 1; transform: scale(1); }
+    80% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0.8); }
+}
+
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 0 0 var(--primary); }
+    70% { box-shadow: 0 0 10px 5px var(--primary); }
+    100% { box-shadow: 0 0 0 0 var(--primary); }
 } 
