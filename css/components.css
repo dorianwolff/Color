@@ -738,6 +738,32 @@ input:checked + .slider:before {
     gap: 1.5rem;
 }
 
+/* Add specific styles for deck selector page active indicator */
+.decks-page .deck-preview {
+    position: relative;
+}
+
+.decks-page .active-indicator {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: var(--success);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 2;
+    transform: none !important; /* Force no transform */
+}
+
+.decks-page .deck-preview.active:hover .active-indicator {
+    opacity: 1;
+    transform: none !important; /* Force no transform */
+}
+
 .page-header {
     padding: 1rem;
     border-bottom: 1px solid var(--border);
