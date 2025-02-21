@@ -4,31 +4,123 @@
     display: flex;
     flex-direction: column;
     background: var(--bg-primary);
-    padding: 2rem;
-    gap: 2rem;
+    padding: 1rem;
 }
 
 .game-board {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
+    display: grid;
+    grid-template-rows: 1fr auto 1fr;
+    gap: 1rem;
     background: var(--bg-secondary);
     border-radius: var(--radius-lg);
-    padding: 2rem;
+    padding: 1rem;
     box-shadow: var(--shadow-lg);
     min-height: 0;
 }
 
 /* Player Sections */
 .player-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 1rem;
+    padding: 1rem;
+    align-items: center;
 }
 
 .ai-section {
-    flex-direction: column-reverse;
+    transform: rotate(180deg);
+}
+
+.ai-section * {
+    transform: rotate(180deg);
+}
+
+/* Game Zones */
+.game-zones {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+    align-items: center;
+    justify-items: center;
+}
+
+/* Center Section */
+.center-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    min-height: 120px;
+    justify-content: center;
+}
+
+.phase-indicator {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+    padding: 1rem 2rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.phase-indicator.show {
+    animation: fadeIn 0.5s ease forwards;
+}
+
+/* Card Zones */
+.deck-zone, .champion-zone, .tomb-zone {
+    width: 100px;
+    height: 140px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.hand-zone {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 140px;
+    width: 100%;
+    gap: 0.5rem;
+}
+
+.player-hand, .ai-hand {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Cards */
+.card {
+    width: 100px;
+    height: 140px;
+    border-radius: var(--radius-sm);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-size: cover;
+    background-position: center;
+    box-shadow: var(--shadow-md);
+}
+
+.card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
+}
+
+.ai-hand .card {
+    background: var(--bg-tertiary);
 }
 
 /* Player Info */
@@ -39,11 +131,12 @@
     padding: 1rem;
     background: var(--bg-tertiary);
     border-radius: var(--radius-md);
+    width: 100%;
 }
 
 .avatar {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid var(--primary);
@@ -54,23 +147,27 @@
 }
 
 .player-name {
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 600;
     color: var(--text-primary);
+    margin-bottom: 0.25rem;
 }
 
 .life-total {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--text-primary);
 }
 
 /* Game Zones */
 .game-zones {
+    flex: 1;
     display: grid;
     grid-template-columns: auto 1fr auto auto;
     gap: 1.5rem;
     align-items: center;
+    justify-content: center;
+    max-width: 800px;
 }
 
 .zone-count {
@@ -156,22 +253,6 @@
 
 .tomb-zone:hover {
     transform: translateY(-4px);
-}
-
-/* Center Section */
-.center-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-}
-
-.phase-indicator {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    text-align: center;
 }
 
 /* Cards */
@@ -324,4 +405,25 @@
         width: 40px;
         height: 40px;
     }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes drawCard {
+    from { 
+        opacity: 0;
+        transform: translateY(-100px) scale(0.8);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.card.drawing {
+    animation: drawCard 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 } 

@@ -29,7 +29,8 @@ const GamePage = {
             isPlayerTurn: Math.random() < 0.5,
             gameEnded: false,
             selectedCard: null,
-            stackedEffects: []
+            stackedEffects: [],
+            firstTurn: true
         };
         
         // Render initial game state
@@ -40,12 +41,11 @@ const GamePage = {
     },
     
     generateAIDeck() {
-        // For now, generate a random deck for the AI
+        // Generate a deck with the first 10 cards from the database
         const allCards = CardDatabase.getAllCards();
         const aiDeck = [];
-        while (aiDeck.length < 10) {
-            const randomCard = allCards[Math.floor(Math.random() * allCards.length)];
-            aiDeck.push(this.initializeCard(randomCard));
+        for (let i = 0; i < 10 && i < allCards.length; i++) {
+            aiDeck.push(this.initializeCard(allCards[i]));
         }
         return aiDeck;
     },
@@ -53,27 +53,73 @@ const GamePage = {
     initializeCard(cardData) {
         // Ensure each card has a proper color object
         const colorValue = typeof cardData.color === 'number' ? cardData.color : 
-                          cardData.color?.value || Math.floor(Math.random() * 6) + 1; // Random color 1-6 if none specified
+                          cardData.color?.value || Math.floor(Math.random() * 6) + 1;
         
         return {
             ...cardData,
             color: CardColor.fromValue(colorValue),
             name: cardData.name || 'Unknown Card',
             description: cardData.description || '',
-            imagePath: cardData.imagePath || 'images/cards/default.jpg',
+            // Use relative path for images
+            imagePath: cardData.imageNumber ? `./images/cards/${cardData.imageNumber}.png` : './images/cards/default.png',
             effects: cardData.effects || []
         };
     },
     
     startGame() {
-        // Draw initial hands
-        for (let i = 0; i < 3; i++) {
-            this.drawCard('player');
-            this.drawCard('ai');
-        }
+        // Clear any existing state
+        this.state.playerHand = [];
+        this.state.aiHand = [];
+        this.updateUI();
+
+        // Determine starting player
+        this.state.isPlayerTurn = Math.random() < 0.5;
+        const startingPlayer = this.state.isPlayerTurn ? 'Player' : 'AI';
         
-        // Start first turn
-        this.startTurn();
+        // Show starting animation sequence
+        const phaseIndicator = document.querySelector('.phase-indicator');
+        
+        // Step 1: Show who starts
+        phaseIndicator.textContent = `${startingPlayer} goes first!`;
+        phaseIndicator.style.animation = 'fadeIn 1s ease';
+        
+        setTimeout(() => {
+            // Step 2: Draw animation for starting hands
+            this.drawStartingHands().then(() => {
+                // Step 3: Start the game
+                setTimeout(() => {
+                    this.state.currentPhase = GamePhase.DRAW;
+                    this.updateUI();
+                    if (!this.state.isPlayerTurn) {
+                        this.handleAITurn();
+                    }
+                }, 500);
+            });
+        }, 1500);
+    },
+    
+    async drawStartingHands() {
+        const drawCard = async (player, delay) => {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    if (player === 'player') {
+                        const card = this.state.playerDeck.pop();
+                        this.state.playerHand.push(card);
+                    } else {
+                        const card = this.state.aiDeck.pop();
+                        this.state.aiHand.push(card);
+                    }
+                    this.updateUI();
+                    resolve();
+                }, delay);
+            });
+        };
+
+        // Draw 3 cards alternately for each player
+        for (let i = 0; i < 3; i++) {
+            await drawCard('player', 400);
+            await drawCard('ai', 400);
+        }
     },
     
     startTurn() {
@@ -123,12 +169,50 @@ const GamePage = {
         this.updateUI();
     },
     
+    updateLifeTotal(player, newLife) {
+        const lifeElement = document.querySelector(`.${player}-life`);
+        const playerInfo = lifeElement.closest('.player-info');
+        
+        // Update the life total
+        this.state[`${player}Life`] = newLife;
+        lifeElement.textContent = newLife;
+        
+        // Update the color gradient based on life total
+        let color;
+        if (newLife >= 7) color = 'var(--card-white)';
+        else if (newLife === 6) color = 'var(--card-purple)';
+        else if (newLife === 5) color = 'var(--card-blue)';
+        else if (newLife === 4) color = 'var(--card-green)';
+        else if (newLife === 3) color = 'var(--card-yellow)';
+        else if (newLife === 2) color = 'var(--card-orange)';
+        else if (newLife === 1) color = 'var(--card-red)';
+        else color = 'var(--card-black)';
+        
+        playerInfo.style.setProperty('--life-color', color);
+        playerInfo.style.background = `radial-gradient(circle at center, ${color} 0%, var(--bg-tertiary) 70%)`;
+        
+        // Check for game over
+        if (newLife <= 0) {
+            this.endGame(player === 'player' ? GameResult.AI_WIN : GameResult.PLAYER_WIN);
+        }
+    },
+    
     handleCombat(attackingCard, defendingCard) {
-        const attackerColor = attackingCard.color;
-        const defenderColor = defendingCard.color;
+        // Cannot attack on first turn if starting player
+        if (this.state.firstTurn && this.state.isPlayerTurn === (this.state.startingPlayer === 'player')) {
+            alert('Cannot attack on your first turn when starting the game');
+            return false;
+        }
+        
+        const attackerColor = attackingCard.color.value;
+        const defenderColor = defendingCard.color.value;
         
         if (attackerColor === defenderColor) {
             // Both cards are defeated
+            this.state.playerTombPile.push(defendingCard);
+            this.state.aiTombPile.push(attackingCard);
+            this.state.playerChampionZone = this.state.playerChampionZone.filter(c => c !== defendingCard);
+            this.state.aiChampionZone = this.state.aiChampionZone.filter(c => c !== attackingCard);
             return { result: 'BOTH_DEFEATED' };
         }
         
@@ -137,10 +221,36 @@ const GamePage = {
             defenderColor - difference : 
             defenderColor + difference;
             
+        defendingCard.color = CardColor.fromValue(newColor);
+        
+        if (newColor <= 0 || newColor >= 7) {
+            // Card is defeated
+            const tombPile = this.state.isPlayerTurn ? this.state.aiTombPile : this.state.playerTombPile;
+            const championZone = this.state.isPlayerTurn ? this.state.aiChampionZone : this.state.playerChampionZone;
+            
+            tombPile.push(defendingCard);
+            const index = championZone.indexOf(defendingCard);
+            if (index > -1) championZone.splice(index, 1);
+        }
+        
         return {
             result: 'COLOR_CHANGE',
             newColor: CardColor.fromValue(newColor)
         };
+    },
+    
+    handleDirectAttack(attackingCard) {
+        // Cannot attack on first turn if starting player
+        if (this.state.firstTurn && this.state.isPlayerTurn === (this.state.startingPlayer === 'player')) {
+            alert('Cannot attack on your first turn when starting the game');
+            return false;
+        }
+        
+        const target = this.state.isPlayerTurn ? 'ai' : 'player';
+        const newLife = this.state[`${target}Life`] - attackingCard.color.value;
+        this.updateLifeTotal(target, newLife);
+        
+        return true;
     },
     
     handleAITurn() {
@@ -176,10 +286,7 @@ const GamePage = {
                 }
             } else {
                 // Direct attack
-                this.state.playerLife -= attackingCard.color;
-                if (this.state.playerLife <= 0) {
-                    this.endGame(GameResult.AI_WIN);
-                }
+                this.handleDirectAttack(attackingCard);
             }
         }
         
@@ -304,9 +411,9 @@ const GamePage = {
                     <!-- AI Section -->
                     <div class="player-section ai-section">
                         <div class="player-info">
-                            <img src="${gameSettings.aiAvatar}" alt="AI" class="avatar">
+                            <img src="${gameSettings.aiAvatar || './images/ai/basic.jpg'}" alt="AI" class="avatar">
                             <div class="player-details">
-                                <div class="player-name">${gameSettings.aiName}</div>
+                                <div class="player-name">${gameSettings.aiName || 'AI'}</div>
                                 <div class="life-total ai-life">7</div>
                             </div>
                         </div>
@@ -335,7 +442,7 @@ const GamePage = {
                     
                     <!-- Center Section -->
                     <div class="center-section">
-                        <div class="phase-indicator">Waiting to start...</div>
+                        <div class="phase-indicator">Game Starting...</div>
                         <button class="btn btn-primary next-phase-btn" style="display: none;">
                             Next Phase
                         </button>
@@ -343,6 +450,14 @@ const GamePage = {
                     
                     <!-- Player Section -->
                     <div class="player-section">
+                        <div class="player-info">
+                            <img src="${playerData.avatar || './images/default-avatar.png'}" alt="Player" class="avatar">
+                            <div class="player-details">
+                                <div class="player-name">${playerData.name || 'Player'}</div>
+                                <div class="life-total player-life">7</div>
+                            </div>
+                        </div>
+                        
                         <div class="game-zones">
                             <div class="deck-zone" title="Your Deck">
                                 <div class="card card-back"></div>
@@ -362,18 +477,33 @@ const GamePage = {
                                 <span class="zone-count player-tomb-count">0</span>
                             </div>
                         </div>
-                        
-                        <div class="player-info">
-                            <img src="${playerData.avatar}" alt="Player" class="avatar">
-                            <div class="player-details">
-                                <div class="player-name">${playerData.name}</div>
-                                <div class="life-total player-life">7</div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
         `;
+        
+        // Add animation styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            @keyframes drawCard {
+                from { opacity: 0; transform: translateY(-100px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            .card {
+                animation: drawCard 0.4s ease;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Initialize life total displays
+        this.updateLifeTotal('player', this.state.playerLife);
+        this.updateLifeTotal('ai', this.state.aiLife);
         
         this.attachEventListeners(container);
     },
