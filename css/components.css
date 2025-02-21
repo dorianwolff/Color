@@ -177,6 +177,7 @@
     flex-direction: column;
     height: 100vh;
     padding: 2rem;
+    background: var(--bg-primary);
 }
 
 .deck-builder-header {
@@ -202,6 +203,7 @@
     flex: 1;
     display: flex;
     gap: 2rem;
+    min-height: 0;
 }
 
 .deck-builder-sidebar {
@@ -209,6 +211,7 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    min-height: 0;
 }
 
 .deck-info {
@@ -242,8 +245,8 @@
 }
 
 .deck-preview:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    transform: none;
+    box-shadow: var(--shadow-sm);
 }
 
 .deck-preview.active {
@@ -319,8 +322,11 @@
     max-width: 31%;  /* Slightly reduced to account for gaps */
 }
 
-.deck-preview:hover .preview-card {
-    transform: translateY(-5px);
+.deck-preview .card:hover {
+    transform: translateY(-2px) scale(1.1);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+    z-index: 1000;
 }
 
 .deck-actions {
@@ -359,17 +365,18 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 1.5rem;
+    overflow: hidden;
 }
 
 .card-filters {
     flex: 0 0 auto;
     display: flex;
     gap: 1rem;
-    padding: 1.5rem;
-    background: var(--bg-secondary);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
+    margin-bottom: 1rem;
 }
 
 .search-bar {
@@ -383,16 +390,32 @@
 
 .available-cards {
     flex: 1;
-    background: var(--bg-secondary);
-    border-radius: var(--radius-md);
-    padding: 1.5rem;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 1rem;
-    align-content: start;
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border);
+    align-content: flex-start;
     overflow-y: auto;
+    padding: 1rem;
+    padding-bottom: 3rem;
+    height: 0;
+    min-height: 100%;
+    position: relative;
+}
+
+/* Make scrollbar always visible */
+.available-cards::-webkit-scrollbar {
+    width: 8px !important;
+    background: var(--bg-secondary);
+}
+
+.available-cards::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+    min-height: 40px;
+}
+
+.available-cards::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hover);
 }
 
 /* Card */
@@ -869,55 +892,54 @@ input:checked + .slider:before {
 
 /* Card tooltip */
 .card-tooltip {
-    display: none;
     position: absolute;
+    z-index: 1001;
     background: var(--bg-secondary);
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     padding: 1rem;
     width: 250px;
-    box-shadow: var(--shadow-lg);
-    z-index: 1001;
     pointer-events: none;
-    top: 0;
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
 .card:hover .card-tooltip {
-    display: block;
-}
-
-/* Smart tooltip positioning */
-.card {
-    position: relative;
-}
-
-.card:hover {
-    z-index: 1000;
+    opacity: 1;
 }
 
 /* Default position (right side) */
 .card .card-tooltip {
     left: calc(100% + 8px);
-    right: auto;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 /* Left side fallback */
 .card.tooltip-left .card-tooltip {
     left: auto;
     right: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
 }
 
-/* Ensure tooltip stays within container */
-.deck-preview, .available-cards {
+/* Available cards container */
+.available-cards {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-content: flex-start;
+    overflow-y: auto;
+    padding: 1rem;
+    padding-bottom: 3rem;
+    height: 0;
+    min-height: 100%;
     position: relative;
-    overflow: visible !important;
 }
 
-.card {
-    overflow: visible !important;
-}
-
-/* Card tooltip */
+/* Card tooltip header */
 .card-tooltip-header {
     display: flex;
     justify-content: space-between;
@@ -950,62 +972,6 @@ input:checked + .slider:before {
     font-size: 0.9rem;
     color: var(--text-secondary);
     line-height: 1.4;
-}
-
-/* Dynamically position tooltip based on available space */
-@media (min-width: 768px) {
-    .card:hover .card-tooltip {
-        left: 50%;
-        transform: translateX(-50%);
-    }
-
-    /* Right side of screen */
-    .card:hover .card-tooltip {
-        left: auto;
-        right: calc(100% + 8px);
-        transform: none;
-    }
-
-    /* Left side of screen */
-    .card:first-child .card-tooltip,
-    .card:nth-child(2) .card-tooltip,
-    .card:nth-child(3) .card-tooltip {
-        left: calc(100% + 8px);
-        right: auto;
-        transform: none;
-    }
-}
-
-/* Bottom fallback for mobile */
-@media (max-width: 767px) {
-    .card .card-tooltip {
-        left: 50%;
-        transform: translateX(-50%);
-        top: calc(100% + 8px);
-    }
-}
-
-/* Customize scrollbar appearance */
-.available-cards::-webkit-scrollbar,
-.deck-preview::-webkit-scrollbar {
-    width: 8px;
-}
-
-.available-cards::-webkit-scrollbar-track,
-.deck-preview::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
-    border-radius: 4px;
-}
-
-.available-cards::-webkit-scrollbar-thumb,
-.deck-preview::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 4px;
-}
-
-.available-cards::-webkit-scrollbar-thumb:hover,
-.deck-preview::-webkit-scrollbar-thumb:hover {
-    background: var(--text-secondary);
 }
 
 /* Main Menu Styles */
@@ -1567,4 +1533,23 @@ input:checked + .slider:before {
         width: 42.85px;  /* 2.5:3.5 ratio (42.85 x 60) */
         height: 60px;
     }
+}
+
+/* Custom scrollbar for available cards */
+.available-cards::-webkit-scrollbar {
+    width: 8px;
+}
+
+.available-cards::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+    border-radius: 4px;
+}
+
+.available-cards::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+.available-cards::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hover);
 } 
