@@ -63,13 +63,7 @@ const GamePage = {
     
     initializeCard(cardData) {
         // Debug log to see exact card data format
-        console.log('Initializing card:', {
-            name: cardData.name,
-            rawColor: cardData.color,
-            baseColor: cardData.baseColor,
-            colorType: typeof cardData.color,
-            fullCardData: cardData
-        });
+        console.log('Initializing card - Raw Data:', cardData);
 
         // Map of numeric values to CardColor enum
         const colorMap = [
@@ -89,27 +83,20 @@ const GamePage = {
         // If it's a CardColor enum value (from database)
         if (cardData.color && typeof cardData.color === 'object' && cardData.color.hasOwnProperty('value')) {
             colorValue = cardData.color.value;
-            console.log(`Using CardColor enum value for ${cardData.name}:`, colorValue);
         }
         // If we have baseColor
         else if (cardData.baseColor !== undefined) {
             colorValue = typeof cardData.baseColor === 'object' ? 
                 cardData.baseColor.value : 
                 Number(cardData.baseColor);
-            console.log(`Using baseColor for ${cardData.name}:`, colorValue);
         }
         // If it's a direct number
         else if (typeof cardData.color === 'number' || (typeof cardData.color === 'string' && !isNaN(cardData.color))) {
             colorValue = Number(cardData.color);
-            console.log(`Using direct numeric color for ${cardData.name}:`, colorValue);
         }
         // Fallback to BLACK (0)
         else {
             colorValue = 0;
-            console.warn(`Invalid color format for card ${cardData.name}, using BLACK (0). Color data:`, {
-                color: cardData.color,
-                baseColor: cardData.baseColor
-            });
         }
 
         // Ensure color value is within bounds
@@ -126,26 +113,48 @@ const GamePage = {
         const imagePath = imageNumber === 'default' ? 
             './images/cards/default.png' : 
             `./images/cards/${imageNumber}.png`;
+
+        // Handle effects data
+        let effects = [];
+        let effectDescriptions = [];
+
+        // Check all possible locations for effects data
+        if (cardData.currentEffects && cardData.currentEffectDescriptions) {
+            effects = cardData.currentEffects;
+            effectDescriptions = cardData.currentEffectDescriptions;
+        } else if (cardData.effects && cardData.effectDescriptions) {
+            effects = cardData.effects;
+            effectDescriptions = cardData.effectDescriptions;
+        } else if (cardData.baseEffects && cardData.baseEffectDescriptions) {
+            effects = cardData.baseEffects;
+            effectDescriptions = cardData.baseEffectDescriptions;
+        } else if (Array.isArray(cardData.effects)) {
+            effects = cardData.effects;
+            effectDescriptions = cardData.effects.map(effect => effect.description || '');
+        }
         
-        // Create the card data
+        // Create the card data with proper effects handling
         const initializedCard = {
             ...cardData,
             id: cardData.id || GameUtils.generateUniqueId(),
             color: color,
-            baseColor: color, // Store the same color object for consistency
+            baseColor: color,
             name: cardData.name || 'Unknown Card',
-            description: cardData.description || '',
             imagePath: imagePath,
-            effects: cardData.effects || [],
+            effects: effects,
+            effectDescriptions: effectDescriptions,
+            currentEffects: effects,
+            currentEffectDescriptions: effectDescriptions,
             imageNumber: imageNumber
         };
 
         // Log the initialized card
-        console.log('Card initialized with color:', {
+        console.log('Card initialized with effects:', {
             name: initializedCard.name,
-            colorName: initializedCard.color.name,
-            colorValue: initializedCard.color.value,
-            colorClass: initializedCard.color.name.toLowerCase()
+            effects: initializedCard.effects,
+            effectDescriptions: initializedCard.effectDescriptions,
+            currentEffects: initializedCard.currentEffects,
+            currentEffectDescriptions: initializedCard.currentEffectDescriptions
         });
 
         return initializedCard;
@@ -595,15 +604,21 @@ const GamePage = {
         console.log(`Moving ${card.name} to ${isPlayer ? 'player' : 'AI'}'s tomb`);
         
         if (isPlayer) {
-            // Get all cards in the champion zone if this is the top card
-            if (this.state.playerChampionZone[this.state.playerChampionZone.length - 1].id === card.id) {
+            // Check if this is the top card before modifying the champion zone
+            const isTopCard = this.state.playerChampionZone.length > 0 && 
+                this.state.playerChampionZone[this.state.playerChampionZone.length - 1].id === card.id;
+                
+            if (isTopCard) {
                 // Move all cards to tomb
                 this.state.playerTombPile.push(...this.state.playerChampionZone);
                 this.state.playerChampionZone = [];
             }
         } else {
-            // Get all cards in the champion zone if this is the top card
-            if (this.state.aiChampionZone[this.state.aiChampionZone.length - 1].id === card.id) {
+            // Check if this is the top card before modifying the champion zone
+            const isTopCard = this.state.aiChampionZone.length > 0 && 
+                this.state.aiChampionZone[this.state.aiChampionZone.length - 1].id === card.id;
+                
+            if (isTopCard) {
                 // Move all cards to tomb
                 this.state.aiTombPile.push(...this.state.aiChampionZone);
                 this.state.aiChampionZone = [];
@@ -801,32 +816,47 @@ const GamePage = {
         
         const hand = this.state[`${player}Hand`];
         
-        // Log hand update
-        console.log(`[Game] Updating ${player} hand:`, hand.map(card => ({
-            name: card.name,
-            color: card.color.name,
-            colorClass: card.color.class.toLowerCase()
-        })));
-        
-        handContainer.innerHTML = hand.map((card, index) => `
-            <div class="card ${player === 'ai' ? 'card-back' : ''}" 
-                 ${player === 'player' ? `style="background-image: url(${card.imagePath})"` : ''}
-                 data-card-index="${index}"
-                 data-card-color="${card.color.name.toLowerCase()}">
-                ${player === 'player' ? `
-                    <div class="card-glow glow-${card.color.name.toLowerCase()}"></div>
-                    <div class="card-effects">
-                        <div class="effect-name">${card.name}</div>
-                        <div class="effect-description">${card.description || 'No effect'}</div>
-                        ${card.effects.length > 0 ? `
-                            <div class="card-effects-list">
-                                ${card.effects.map(effect => `<div class="effect">${effect}</div>`).join('')}
+        handContainer.innerHTML = hand.map((card, index) => {
+            // Debug log for card effects
+            console.log(`Card in hand: ${card.name}`, {
+                effects: card.effects,
+                effectDescriptions: card.effectDescriptions,
+                currentEffects: card.currentEffects,
+                currentEffectDescriptions: card.currentEffectDescriptions
+            });
+
+            return `
+                <div class="card ${player === 'ai' ? 'card-back' : ''}" 
+                     ${player === 'player' ? `style="background-image: url(${card.imagePath})"` : ''}
+                     data-card-index="${index}"
+                     data-card-color="${card.color.name.toLowerCase()}">
+                    ${player === 'player' ? `
+                        <div class="card-glow glow-${card.color.name.toLowerCase()}"></div>
+                        <div class="info-window">
+                            <div class="info-header">
+                                <h3>${card.name}</h3>
+                                <div class="color-indicator ${card.color.name.toLowerCase()}">
+                                    ${card.color.name}
+                                </div>
                             </div>
-                        ` : ''}
-                    </div>
-                ` : ''}
-            </div>
-        `).join('');
+                            <div class="card-layer">
+                                <div class="card-effects">
+                                    ${(card.effects && card.effects.length > 0) ? 
+                                        card.effects.map((effect, effectIndex) => `
+                                            <div class="effect">
+                                                <span class="effect-name">${effect}</span>
+                                                <span class="effect-description">${card.effectDescriptions[effectIndex] || ''}</span>
+                                            </div>
+                                        `).join('') : 
+                                        '<div class="effect"><span class="effect-description">No effect</span></div>'
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
     },
     
     updateChampionZone(player) {
@@ -839,37 +869,60 @@ const GamePage = {
         zoneContainer.classList.remove('has-champion', 'glow-black', 'glow-red', 'glow-orange', 'glow-yellow', 'glow-green', 'glow-blue', 'glow-purple', 'glow-white');
         
         if (championZone.length > 0) {
-            const card = championZone[championZone.length - 1];
-            const colorClass = card.color.name.toLowerCase();
+            const topCard = championZone[championZone.length - 1];
+            const colorClass = topCard.color.name.toLowerCase();
+            
+            // Collect all effects from the stack
+            const allEffects = [];
+            const allEffectDescriptions = [];
+            championZone.forEach(card => {
+                if (card.effects && card.effects.length > 0) {
+                    card.effects.forEach((effect, index) => {
+                        allEffects.push(effect);
+                        allEffectDescriptions.push(card.effectDescriptions[index] || '');
+                    });
+                }
+            });
+
+            // Update the top card's current effects to include all stacked effects
+            topCard.currentEffects = allEffects;
+            topCard.currentEffectDescriptions = allEffectDescriptions;
+            
+            // Debug log for champion card effects
+            console.log(`Champion card: ${topCard.name}`, {
+                effects: topCard.effects,
+                effectDescriptions: topCard.effectDescriptions,
+                currentEffects: topCard.currentEffects,
+                currentEffectDescriptions: topCard.currentEffectDescriptions,
+                allStackedEffects: allEffects
+            });
             
             // Add glow classes
             zoneContainer.classList.add('has-champion', `glow-${colorClass}`);
             
             zoneContainer.innerHTML = `
-                <div class="card" style="background-image: url(${card.imagePath})"
-                     data-card-id="${card.id}"
+                <div class="card" style="background-image: url(${topCard.imagePath})"
+                     data-card-id="${topCard.id}"
                      data-card-color="${colorClass}">
                     <div class="card-glow glow-${colorClass}"></div>
-                    <div class="card-effects">
-                        <div class="effect-name">${card.name}</div>
-                        <div class="effect-description">${card.description || 'No effect'}</div>
-                        <div class="card-color">Current Color: ${card.color.name} (${card.color.value})</div>
-                        ${card.effects.length > 0 ? `
-                            <div class="card-effects-list">
-                                <div class="effects-title">Card Effects:</div>
-                                ${card.effects.map(effect => `
-                                    <div class="effect">${effect}</div>
-                                `).join('')}
+                    <div class="info-window">
+                        <div class="info-header">
+                            <h3>${topCard.name}</h3>
+                            <div class="color-indicator ${colorClass}">
+                                ${topCard.color.name}
                             </div>
-                        ` : ''}
-                        ${this.state.stackedEffects.length > 0 ? `
-                            <div class="stacked-effects">
-                                <div class="effects-title">Stacked Effects:</div>
-                                ${this.state.stackedEffects.map(effect => `
-                                    <div class="stacked-effect">${effect}</div>
-                                `).join('')}
-                            </div>
-                        ` : ''}
+                        </div>
+                        <div class="card-effects">
+                            ${(allEffects.length > 0) ? 
+                                allEffects.map((effect, effectIndex) => `
+                                    <div class="effect">
+                                        <span class="effect-name">${effect}</span>
+                                        <span class="effect-description">${allEffectDescriptions[effectIndex] || ''}</span>
+                                    </div>
+                                `).join('') : 
+                                '<div class="effect"><span class="effect-description">No effect</span></div>'
+                            }
+                        </div>
                     </div>
                 </div>
             `;
@@ -884,28 +937,13 @@ const GamePage = {
         // Can only use player's champion to attack
         if (!isPlayer) return;
         
-        // Store the selected card for combat
-        this.state.selectedCard = card;
-        
-        // Add visual indicator for selected card
-        const championCards = document.querySelectorAll('.champion-zone .card');
-        championCards.forEach(cardElement => cardElement.classList.remove('selected'));
-        
-        const selectedElement = document.querySelector(`.player-champion-zone .card[data-card-id="${card.id}"]`);
-        if (selectedElement) {
-            selectedElement.classList.add('selected');
-            
-            // If AI has no champion, perform direct attack immediately
-            if (this.state.aiChampionZone.length === 0) {
-                this.handleDirectAttack(card);
-            } else {
-                // Add visual indicator that AI champion can be attacked
-                const aiChampion = document.querySelector('.ai-champion-zone .card');
-                if (aiChampion) {
-                    aiChampion.style.cursor = 'pointer';
-                    aiChampion.classList.add('attackable');
-                }
-            }
+        // If AI has a champion, attack it directly
+        if (this.state.aiChampionZone.length > 0) {
+            const aiCard = this.state.aiChampionZone[this.state.aiChampionZone.length - 1];
+            this.handleCombat(card, aiCard);
+        } else {
+            // If AI has no champion, perform direct attack
+            this.handleDirectAttack(card);
         }
     },
     
@@ -1096,10 +1134,26 @@ const GamePage = {
                         ${tombPile.map(card => `
                             <div class="card" style="background-image: url(${card.imagePath})">
                                 <div class="card-glow glow-${card.color.name.toLowerCase()}"></div>
-                                <div class="card-effects">
-                                    <div class="effect-name">${card.name}</div>
-                                    <div class="effect-description">${card.description || 'No effect'}</div>
-                                    <div class="card-color">Color: ${card.color.name}</div>
+                                <div class="info-window">
+                                    <div class="info-header">
+                                        <h3>${card.name}</h3>
+                                        <div class="color-indicator ${card.color.name.toLowerCase()}">
+                                            ${card.color.name}
+                                        </div>
+                                    </div>
+                                    <div class="card-layer">
+                                        <div class="card-effects">
+                                            ${card.currentEffects && card.currentEffects.length > 0 ? 
+                                                card.currentEffects.map((effect, effectIndex) => `
+                                                    <div class="effect">
+                                                        <span class="effect-name">${effect}</span>
+                                                        <span class="effect-description">${card.currentEffectDescriptions ? card.currentEffectDescriptions[effectIndex] || '' : ''}</span>
+                                                    </div>
+                                                `).join('') : 
+                                                '<div class="effect"><span class="effect-description">No effect</span></div>'
+                                            }
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         `).join('')}

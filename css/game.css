@@ -352,7 +352,7 @@
     z-index: -1;
 }
 
-.glow-black { background: radial-gradient(circle at center, var(--card-black) 0%, transparent 70%); }
+.glow-black { background: radial-gradient(circle at center, #2a2a2a 0%, transparent 70%); }
 .glow-red { background: radial-gradient(circle at center, var(--card-red) 0%, transparent 70%); }
 .glow-orange { background: radial-gradient(circle at center, var(--card-orange) 0%, transparent 70%); }
 .glow-yellow { background: radial-gradient(circle at center, var(--card-yellow) 0%, transparent 70%); }
@@ -384,11 +384,31 @@
 
 .tomb-pile-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 1rem;
     padding: 1rem;
     max-height: 70vh;
     overflow-y: auto;
+}
+
+.tomb-pile-grid .card {
+    position: relative;
+}
+
+.tomb-pile-grid .info-window {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 250px;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.tomb-pile-grid .card:hover .info-window {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 /* Game Over Message */
@@ -620,4 +640,168 @@
     0% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.7); }
     70% { box-shadow: 0 0 0 20px rgba(var(--primary-rgb), 0); }
     100% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0); }
+}
+
+/* Info Window Styles */
+.info-window {
+    position: absolute;
+    background: rgba(30, 30, 30, 0.95);
+    border-radius: 8px;
+    padding: 1rem;
+    width: 280px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 100;
+    height: 210px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Position adjustments for all zones */
+.player-hand .card .info-window,
+.player-champion-zone .card .info-window {
+    left: calc(100% + 10px);
+    top: 0;
+}
+
+.ai-hand .card .info-window,
+.ai-champion-zone .card .info-window {
+    left: calc(100% + 10px);
+    top: 0;
+}
+
+/* Flip to left side if too close to right edge */
+.card.right-edge .info-window {
+    left: auto;
+    right: calc(100% + 10px);
+}
+
+/* Show info window on card hover and maintain visibility when hovering the window */
+.card:hover .info-window,
+.info-window:hover {
+    opacity: 1;
+    pointer-events: all;
+    visibility: visible;
+}
+
+/* Create a hover area to prevent gaps */
+.card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 100%;
+    width: 10px; /* Gap between card and info window */
+}
+
+.card.right-edge::after {
+    left: auto;
+    right: 100%;
+}
+
+.info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.75rem;
+    margin: 0 -1rem 0.75rem -1rem; /* Negative margin to extend line */
+    padding-left: 1rem; /* Compensate for negative margin */
+    padding-right: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2); /* Lighter color for better visibility */
+    flex: 0 0 auto;
+    min-height: 40px;
+}
+
+.info-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.color-indicator {
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    flex-shrink: 0; /* Prevent color indicator from shrinking */
+}
+
+.card-effects {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    overflow-y: scroll; /* Force scrollbar to show */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+    flex: 1 1 auto;
+    padding-right: 0.5rem;
+    margin-right: -0.5rem;
+    height: calc(100% - 60px);
+    min-height: 0;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Ensure scrollbar is visible in Firefox */
+.card-effects {
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Custom scrollbar for Webkit browsers */
+.card-effects::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.card-effects::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    margin: 4px 0; /* Add some space around the scrollbar */
+}
+
+.card-effects::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    border: 2px solid rgba(30, 30, 30, 0.95);
+    min-height: 40px; /* Minimum thumb size */
+}
+
+.card-effects::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+/* Color indicator backgrounds with proper colors */
+.color-indicator.black { background: #2a2a2a; color: #ffffff; }
+.color-indicator.red { background: #ff4444; color: #ffffff; }
+.color-indicator.orange { background: #ff8c00; color: #ffffff; }
+.color-indicator.yellow { background: #ffd700; color: #1a1a1a; }
+.color-indicator.green { background: #32cd32; color: #ffffff; }
+.color-indicator.blue { background: #1e90ff; color: #ffffff; }
+.color-indicator.purple { background: #9370db; color: #ffffff; }
+.color-indicator.white { background: #f8f8ff; color: #1a1a1a; }
+
+/* Remove duplicate scrollbar styles */
+.info-window::-webkit-scrollbar,
+.info-window::-webkit-scrollbar-track,
+.info-window::-webkit-scrollbar-thumb,
+.info-window::-webkit-scrollbar-thumb:hover {
+    display: none;
+}
+
+/* Remove conflicting overflow property */
+.info-window {
+    overflow-y: visible;
+}
+
+/* Tomb pile specific adjustments */
+.tomb-pile-grid .card .info-window {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 10px;
 } 
