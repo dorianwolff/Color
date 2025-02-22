@@ -315,32 +315,19 @@ const GamePage = {
         if (this.state.gameEnded) return;
         
         const currentPlayer = this.state.isPlayerTurn ? 'player' : 'ai';
-        this.state.currentPhase = 'DRAW';  // Use string instead of GamePhase.DRAW
+        this.state.currentPhase = 'DRAW';
         console.log(`[${currentPlayer.toUpperCase()}] Starting Draw Phase`);
         this.updateUI();
         
         if (this.state.isPlayerTurn) {
-            // Player's turn - draw card and transition to champion phase after delay
             if (this.state.playerDeck.length > 0) {
                 this.drawCard('player');
-                // Ensure transition to champion phase after draw animation
-                setTimeout(() => {
-                    if (this.state.currentPhase === 'DRAW') {
-                        this.state.currentPhase = 'CHAMPION';
-                        console.log('[Player] Starting Champion Phase');
-                        this.updateUI();
-                    }
-                }, 1000);
             } else {
-                // If no cards to draw, transition to champion phase immediately
-                setTimeout(() => {
-                    this.state.currentPhase = 'CHAMPION';
-                    console.log('[Player] Starting Champion Phase (no cards to draw)');
-                    this.updateUI();
-                }, 1000);
+                // If no cards to draw, go directly to champion phase
+                this.state.currentPhase = 'CHAMPION';
+                this.updateUI();
             }
         } else {
-            // AI's turn
             this.handleAITurn();
         }
     },
@@ -369,12 +356,10 @@ const GamePage = {
                     this.updateUI();
                     
                     // Only transition phase for player's turn after draw animation
-                    if (isPlayer && this.state.currentPhase === 'DRAW') {
-                        setTimeout(() => {
-                            this.state.currentPhase = 'CHAMPION';
-                            console.log('[Player] Starting Champion Phase');
-                            this.updateUI();
-                        }, 600);
+                    if (isPlayer) {
+                        this.state.currentPhase = 'CHAMPION';
+                        console.log('[Player] Starting Champion Phase');
+                        this.updateUI();
                     }
                 }, 400);
             }
@@ -425,99 +410,131 @@ const GamePage = {
     },
     
     handleCombat(attackingCard, defendingCard) {
-        console.log(`Combat: ${attackingCard.name} (${attackingCard.power}) vs ${defendingCard.name} (${defendingCard.power})`);
+        console.log(`Combat: ${attackingCard.name} (Color: ${attackingCard.color.value}) vs ${defendingCard.name} (Color: ${defendingCard.color.value})`);
         
-        // Apply any stacked effects
-        const attackerPower = this.calculatePower(attackingCard);
-        const defenderPower = this.calculatePower(defendingCard);
+        // Get current color values
+        const attackerColorValue = attackingCard.color.value;
+        const defenderColorValue = defendingCard.color.value;
         
-        console.log(`After effects: Attacker (${attackerPower}) vs Defender (${defenderPower})`);
-        
-        // Determine combat result
-        if (attackerPower > defenderPower) {
-            // Attacker wins
-            console.log(`${attackingCard.name} wins combat!`);
-            this.moveToTomb(defendingCard, false); // Move AI's card to tomb
-            this.handleDirectAttack(attackingCard); // Deal damage to AI
-        } else if (defenderPower > attackerPower) {
-            // Defender wins
-            console.log(`${defendingCard.name} wins combat!`);
-            this.moveToTomb(attackingCard, true); // Move player's card to tomb
-        } else {
-            // Draw - both cards are destroyed
-            console.log('Combat results in a draw - both champions destroyed!');
-            this.moveToTomb(attackingCard, true);
-            this.moveToTomb(defendingCard, false);
+        // If same color, both are defeated
+        if (attackerColorValue === defenderColorValue) {
+            console.log('Same color - both cards defeated!');
+            this.moveToTomb(attackingCard, this.state.isPlayerTurn);
+            this.moveToTomb(defendingCard, !this.state.isPlayerTurn);
+        }
+        // If attacker has higher color value
+        else if (attackerColorValue > defenderColorValue) {
+            const difference = attackerColorValue - defenderColorValue;
+            const newDefenderValue = defenderColorValue - difference;
+            console.log(`Defender loses ${difference} color points (${defenderColorValue} -> ${newDefenderValue})`);
+            
+            // If defender goes black (0 or less), it's defeated
+            if (newDefenderValue <= 0) {
+                console.log('Defender turned black - defeated!');
+                this.moveToTomb(defendingCard, !this.state.isPlayerTurn);
+            } else {
+                // Update defender's color
+                defendingCard.color = this.getColorForValue(newDefenderValue);
+                // Update the visual representation
+                this.updateChampionZone(this.state.isPlayerTurn ? 'ai' : 'player');
+            }
+        }
+        // If defender has higher color value
+        else {
+            const difference = defenderColorValue - attackerColorValue;
+            const newDefenderValue = defenderColorValue + difference;
+            console.log(`Defender gains ${difference} color points (${defenderColorValue} -> ${newDefenderValue})`);
+            
+            // If defender goes white (7 or more), it's defeated
+            if (newDefenderValue >= 7) {
+                console.log('Defender turned white - defeated!');
+                this.moveToTomb(defendingCard, !this.state.isPlayerTurn);
+            } else {
+                // Update defender's color
+                defendingCard.color = this.getColorForValue(newDefenderValue);
+                // Update the visual representation
+                this.updateChampionZone(this.state.isPlayerTurn ? 'ai' : 'player');
+            }
         }
         
         // Clear any stacked effects
         this.state.stackedEffects = [];
         
-        // Update the display
-        this.updateDisplay();
-    },
-    
-    calculatePower(card) {
-        let totalPower = card.power;
+        // End combat phase after attack
+        this.state.currentPhase = 'END';
+        this.updateUI();
         
-        // Apply stacked effects
-        this.state.stackedEffects.forEach(effect => {
-            if (effect.targetCard.id === card.id) {
-                switch (effect.type) {
-                    case CardColor.RED:
-                        totalPower += 2;
-                        break;
-                    case CardColor.BLUE:
-                        totalPower -= 1;
-                        break;
-                    case CardColor.GREEN:
-                        totalPower += 1;
-                        break;
-                    // Add other color effects as needed
-                }
-            }
-        });
-        
-        return Math.max(0, totalPower); // Power can't go below 0
+        // End turn after a short delay
+        setTimeout(() => {
+            this.endTurn();
+        }, 1000);
     },
     
     handleDirectAttack(attackingCard) {
         const damage = attackingCard.color.value;
-        console.log(`Direct attack with ${attackingCard.name} for ${damage} damage!`);
+        console.log(`Direct attack with ${attackingCard.name} (Color: ${damage})`);
         
         if (this.state.isPlayerTurn) {
-            this.state.aiLife -= damage;
-            console.log(`AI life reduced to ${this.state.aiLife}`);
-            this.updateLifeTotal('ai', this.state.aiLife);
+            const newAiLife = this.state.aiLife - damage;
+            console.log(`AI life reduced by ${damage} (${this.state.aiLife} -> ${newAiLife})`);
+            this.updateLifeTotal('ai', newAiLife);
         } else {
-            this.state.playerLife -= damage;
-            console.log(`Player life reduced to ${this.state.playerLife}`);
-            this.updateLifeTotal('player', this.state.playerLife);
+            const newPlayerLife = this.state.playerLife - damage;
+            console.log(`Player life reduced by ${damage} (${this.state.playerLife} -> ${newPlayerLife})`);
+            this.updateLifeTotal('player', newPlayerLife);
         }
         
-        // Check for game end
-        if (this.state.aiLife <= 0) {
-            this.endGame(GameResult.PLAYER_WIN);
-        } else if (this.state.playerLife <= 0) {
-            this.endGame(GameResult.AI_WIN);
-        }
+        // End combat phase after attack
+        this.state.currentPhase = 'END';
+        this.updateUI();
+        
+        // End turn after a short delay
+        setTimeout(() => {
+            this.endTurn();
+        }, 1000);
+    },
+    
+    // Helper method to get CardColor enum for a value
+    getColorForValue(value) {
+        // Ensure value is within bounds
+        value = Math.max(0, Math.min(7, value));
+        
+        // Map of numeric values to CardColor enum
+        const colorMap = [
+            CardColor.BLACK,   // 0
+            CardColor.RED,     // 1
+            CardColor.ORANGE,  // 2
+            CardColor.YELLOW,  // 3
+            CardColor.GREEN,   // 4
+            CardColor.BLUE,    // 5
+            CardColor.PURPLE,  // 6
+            CardColor.WHITE    // 7
+        ];
+        
+        return colorMap[value];
     },
     
     moveToTomb(card, isPlayer) {
         console.log(`Moving ${card.name} to ${isPlayer ? 'player' : 'AI'}'s tomb`);
         
         if (isPlayer) {
-            // Remove from player's champion zone
-            this.state.playerChampionZone = this.state.playerChampionZone.filter(c => c.id !== card.id);
-            this.state.playerTombPile.push(card);
+            // Get all cards in the champion zone if this is the top card
+            if (this.state.playerChampionZone[this.state.playerChampionZone.length - 1].id === card.id) {
+                // Move all cards to tomb
+                this.state.playerTombPile.push(...this.state.playerChampionZone);
+                this.state.playerChampionZone = [];
+            }
         } else {
-            // Remove from AI's champion zone
-            this.state.aiChampionZone = this.state.aiChampionZone.filter(c => c.id !== card.id);
-            this.state.aiTombPile.push(card);
+            // Get all cards in the champion zone if this is the top card
+            if (this.state.aiChampionZone[this.state.aiChampionZone.length - 1].id === card.id) {
+                // Move all cards to tomb
+                this.state.aiTombPile.push(...this.state.aiChampionZone);
+                this.state.aiChampionZone = [];
+            }
         }
         
-        // Update zone counts
-        this.updateZoneCount(`${isPlayer ? 'player' : 'ai'}-tomb-count`, isPlayer ? this.state.playerTombPile.length : this.state.aiTombPile.length);
+        // Update zone counts and UI
+        this.updateUI();
     },
     
     endTurn() {
@@ -540,97 +557,62 @@ const GamePage = {
     
     handleAITurn() {
         if (this.state.isPlayerTurn) return;
-        console.log('[AI] Turn starting');
         
-        // Execute phases in sequence using Promises
-        const executeDrawPhase = () => {
-            return new Promise(resolve => {
-                console.log('[AI] Draw Phase');
-                if (this.state.aiDeck.length > 0) {
-                    this.drawCard('ai');
-                }
-                setTimeout(() => {
-                    this.nextPhase();
-                    resolve();
-                }, 1000);
-            });
-        };
+        // Draw Phase
+        if (this.state.aiDeck.length > 0) {
+            this.drawCard('ai');
+        }
         
-        const executeChampionPhase = () => {
-            return new Promise(resolve => {
-                console.log('[AI] Champion Phase');
-                if (this.state.aiHand.length > 0) {
-                    const randomIndex = Math.floor(Math.random() * this.state.aiHand.length);
-                    const card = this.state.aiHand[randomIndex];
-                    this.state.aiHand.splice(randomIndex, 1);
-                    this.state.aiChampionZone.push(card);
-                    this.updateUI();
-                }
-                setTimeout(() => {
-                    this.nextPhase();
-                    resolve();
-                }, 1500);
-            });
-        };
-        
-        const executeCombatPhase = () => {
-            return new Promise(resolve => {
-                console.log('[AI] Combat Phase');
-                if (!this.state.firstTurn) {
+        // Wait for draw animation to complete
+        setTimeout(() => {
+            // Champion Phase
+            this.state.currentPhase = 'CHAMPION';
+            this.updateUI();
+            
+            if (this.state.aiHand.length > 0) {
+                const randomIndex = Math.floor(Math.random() * this.state.aiHand.length);
+                const card = this.state.aiHand[randomIndex];
+                this.state.aiHand.splice(randomIndex, 1);
+                this.state.aiChampionZone.push(card);
+                this.updateUI();
+            }
+            
+            // Combat Phase
+            setTimeout(() => {
+                this.state.currentPhase = 'COMBAT';
+                this.updateUI();
+                
+                if (!this.state.firstTurn && this.state.aiChampionZone.length > 0) {
                     this.handleAICombat();
                 } else {
                     console.log('[AI] Skips combat on first turn');
-                }
-                setTimeout(() => {
                     this.endTurn();
-                    resolve();
-                }, 1500);
-            });
-        };
-        
-        // Execute phases in sequence
-        executeDrawPhase()
-            .then(() => executeChampionPhase())
-            .then(() => executeCombatPhase());
+                }
+            }, 1000);
+        }, 1000);
     },
     
     handleAICombat() {
         // If AI has no champions, skip combat
         if (this.state.aiChampionZone.length === 0) {
-            console.log('AI has no champions to attack with');
+            console.log('[AI] Has no champions to attack with');
             return;
         }
         
-        // For each AI champion, try to attack
-        this.state.aiChampionZone.forEach(attacker => {
-            console.log(`AI considering attack with ${attacker.name}`);
-            
-            if (this.state.playerChampionZone.length > 0) {
-                // Find the best target based on power comparison
-                let bestTarget = null;
-                let bestOutcome = -Infinity;
-                
-                this.state.playerChampionZone.forEach(defender => {
-                    const attackerPower = this.calculatePower(attacker);
-                    const defenderPower = this.calculatePower(defender);
-                    const outcome = attackerPower - defenderPower;
-                    
-                    if (outcome > bestOutcome) {
-                        bestOutcome = outcome;
-                        bestTarget = defender;
-                    }
-                });
-                
-                if (bestTarget) {
-                    console.log(`AI attacks ${bestTarget.name} with ${attacker.name}`);
-                    this.handleCombat(attacker, bestTarget);
-                }
-            } else {
-                // Direct attack if no defenders
-                console.log(`AI direct attacks with ${attacker.name}`);
-                this.handleDirectAttack(attacker);
-            }
-        });
+        // Get the top card of the AI's champion zone
+        const attacker = this.state.aiChampionZone[this.state.aiChampionZone.length - 1];
+        console.log(`[AI] Attacking with ${attacker.name} (Color: ${attacker.color.value})`);
+        
+        // If player has a champion, attack it
+        if (this.state.playerChampionZone.length > 0) {
+            const defender = this.state.playerChampionZone[this.state.playerChampionZone.length - 1];
+            console.log(`[AI] Attacking player's ${defender.name} (Color: ${defender.color.value})`);
+            this.handleCombat(attacker, defender);
+        } else {
+            // Direct attack if no defenders
+            console.log(`[AI] Direct attacking player with ${attacker.name}`);
+            this.handleDirectAttack(attacker);
+        }
     },
     
     endGame(result) {
@@ -781,23 +763,33 @@ const GamePage = {
         
         if (championZone.length > 0) {
             const card = championZone[championZone.length - 1];
+            const colorClass = card.color.name.toLowerCase();
             
             // Add glow classes
-            zoneContainer.classList.add('has-champion', `glow-${card.color.name.toLowerCase()}`);
+            zoneContainer.classList.add('has-champion', `glow-${colorClass}`);
             
             zoneContainer.innerHTML = `
                 <div class="card" style="background-image: url(${card.imagePath})"
                      data-card-id="${card.id}"
-                     data-card-color="${card.color.name.toLowerCase()}">
-                    <div class="card-glow glow-${card.color.name.toLowerCase()}"></div>
+                     data-card-color="${colorClass}">
+                    <div class="card-glow glow-${colorClass}"></div>
                     <div class="card-effects">
                         <div class="effect-name">${card.name}</div>
                         <div class="effect-description">${card.description || 'No effect'}</div>
+                        <div class="card-color">Current Color: ${card.color.name} (${card.color.value})</div>
+                        ${card.effects.length > 0 ? `
+                            <div class="card-effects-list">
+                                <div class="effects-title">Card Effects:</div>
+                                ${card.effects.map(effect => `
+                                    <div class="effect">${effect}</div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
                         ${this.state.stackedEffects.length > 0 ? `
                             <div class="stacked-effects">
                                 <div class="effects-title">Stacked Effects:</div>
                                 ${this.state.stackedEffects.map(effect => `
-                                    <div class="stacked-effect">${effect.description}</div>
+                                    <div class="stacked-effect">${effect}</div>
                                 `).join('')}
                             </div>
                         ` : ''}
@@ -810,7 +802,7 @@ const GamePage = {
     },
     
     handleChampionClick(card, isPlayer) {
-        if (!this.state.isPlayerTurn || this.state.currentPhase !== 'COMBAT') return;
+        if (!this.state.isPlayerTurn || this.state.currentPhase !== 'COMBAT' || this.state.firstTurn) return;
         
         // Can only use player's champion to attack
         if (!isPlayer) return;
@@ -825,6 +817,11 @@ const GamePage = {
         const selectedElement = document.querySelector(`.player-champion-zone .card[data-card-id="${card.id}"]`);
         if (selectedElement) {
             selectedElement.classList.add('selected');
+        }
+        
+        // If AI has no champion, perform direct attack immediately
+        if (this.state.aiChampionZone.length === 0) {
+            this.handleDirectAttack(card);
         }
     },
     
@@ -945,20 +942,24 @@ const GamePage = {
             if (cardElement.closest('.player-hand') && this.state.isPlayerTurn && this.state.currentPhase === 'CHAMPION') {
                 const cardIndex = Array.from(cardElement.parentNode.children).indexOf(cardElement);
                 this.playCard(cardIndex);
-            } else if (cardElement.closest('.player-champion-zone') && this.state.isPlayerTurn && this.state.currentPhase === 'COMBAT') {
+            } else if (cardElement.closest('.player-champion-zone') && this.state.isPlayerTurn && this.state.currentPhase === 'COMBAT' && !this.state.firstTurn) {
                 const cardId = cardElement.dataset.cardId;
                 const card = this.state.playerChampionZone.find(c => c.id === cardId);
-                if (card) this.handleChampionClick(card, true);
-            } else if (cardElement.closest('.ai-champion-zone') && this.state.selectedCard) {
+                if (card && this.state.playerChampionZone.length > 0) {
+                    this.handleChampionClick(card, true);
+                }
+            } else if (cardElement.closest('.ai-champion-zone') && this.state.selectedCard && this.state.aiChampionZone.length > 0) {
                 const cardId = cardElement.dataset.cardId;
-                const card = this.state.aiChampionZone.find(c => c.id === cardId);
-                if (card) this.handleOpponentChampionClick(card);
+                const card = this.state.aiChampionZone[this.state.aiChampionZone.length - 1]; // Get top card
+                if (card) {
+                    this.handleOpponentChampionClick(card);
+                }
             }
         });
         
         // Direct attack handler
         container.addEventListener('click', (e) => {
-            if (e.target.closest('.ai-info') && this.state.selectedCard && this.state.aiChampionZone.length === 0) {
+            if (e.target.closest('.ai-info') && this.state.selectedCard && this.state.aiChampionZone.length === 0 && !this.state.firstTurn) {
                 this.handleOpponentDirectAttack();
             }
         });
@@ -966,7 +967,7 @@ const GamePage = {
         // Tomb pile click handlers
         container.querySelectorAll('.tomb-zone').forEach(tombZone => {
             tombZone.addEventListener('click', () => {
-                const isPlayer = tombZone.closest('.player-section:not(.ai-section)');
+                const isPlayer = tombZone.closest('.player-zones') !== null;
                 const tombPile = isPlayer ? this.state.playerTombPile : this.state.aiTombPile;
                 
                 if (tombPile.length > 0) {
@@ -982,33 +983,7 @@ const GamePage = {
                 if (!this.state.isPlayerTurn) return;
                 
                 console.log(`[Player] Ending ${this.state.currentPhase} phase`);
-                
-                // Manual phase transition for player
-                let nextPhase;
-                switch (this.state.currentPhase) {
-                    case 'DRAW':
-                        nextPhase = 'CHAMPION';
-                        break;
-                    case 'CHAMPION':
-                        nextPhase = 'COMBAT';
-                        break;
-                    case 'COMBAT':
-                        nextPhase = 'END';
-                        break;
-                    default:
-                        nextPhase = 'END';
-                }
-                
-                if (nextPhase === 'END') {
-                    this.endTurn();
-                } else {
-                    this.state.currentPhase = nextPhase;
-                    if (nextPhase === 'CHAMPION') {
-                        this.state.stackedEffects = [];
-                    }
-                    console.log(`[Player] Starting ${nextPhase} phase`);
-                    this.updateUI();
-                }
+                this.nextPhase();
             });
         }
     },
@@ -1016,17 +991,26 @@ const GamePage = {
     showTombPileModal(tombPile) {
         const modal = document.createElement('div');
         modal.className = 'modal-overlay';
+        
+        // Determine if this is the player's or AI's tomb pile
+        const isPlayerTomb = tombPile === this.state.playerTombPile;
+        
         modal.innerHTML = `
             <div class="modal tomb-pile-modal">
                 <div class="modal-header">
-                    <h3>Tomb Pile (${tombPile.length} cards)</h3>
+                    <h3>${isPlayerTomb ? 'Your' : 'AI\'s'} Tomb Pile (${tombPile.length} cards)</h3>
                     <button class="modal-close">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div class="tomb-pile-grid">
                         ${tombPile.map(card => `
                             <div class="card" style="background-image: url(${card.imagePath})">
-                                <div class="card-glow glow-${card.color.class}"></div>
+                                <div class="card-glow glow-${card.color.name.toLowerCase()}"></div>
+                                <div class="card-effects">
+                                    <div class="effect-name">${card.name}</div>
+                                    <div class="effect-description">${card.description || 'No effect'}</div>
+                                    <div class="card-color">Color: ${card.color.name}</div>
+                                </div>
                             </div>
                         `).join('')}
                     </div>
@@ -1051,29 +1035,39 @@ const GamePage = {
         if (!this.state.isPlayerTurn) {
             console.log(`[AI] Ending ${this.state.currentPhase} Phase`);
             
-            // Manual phase transition
-            let nextPhase;
             switch (this.state.currentPhase) {
                 case 'DRAW':
-                    nextPhase = 'CHAMPION';
+                    this.state.currentPhase = 'CHAMPION';
                     break;
                 case 'CHAMPION':
-                    nextPhase = 'COMBAT';
+                    this.state.currentPhase = 'COMBAT';
+                    this.state.stackedEffects = [];
                     break;
                 case 'COMBAT':
-                    nextPhase = 'END';
-                    break;
-                default:
-                    nextPhase = 'END';
+                    this.endTurn();
+                    return;
             }
             
-            if (nextPhase === 'END') {
-                this.endTurn();
-            } else {
-                this.state.currentPhase = nextPhase;
-                console.log(`[AI] Starting ${nextPhase} Phase`);
-                this.updateUI();
+            console.log(`[AI] Starting ${this.state.currentPhase} Phase`);
+            this.updateUI();
+        } else {
+            console.log(`[Player] Ending ${this.state.currentPhase} Phase`);
+            
+            switch (this.state.currentPhase) {
+                case 'DRAW':
+                    this.state.currentPhase = 'CHAMPION';
+                    break;
+                case 'CHAMPION':
+                    this.state.currentPhase = 'COMBAT';
+                    this.state.stackedEffects = [];
+                    break;
+                case 'COMBAT':
+                    this.endTurn();
+                    return;
             }
+            
+            console.log(`[Player] Starting ${this.state.currentPhase} Phase`);
+            this.updateUI();
         }
     }
 };
