@@ -13,6 +13,17 @@ const GamePage = {
             return;
         }
         
+        // Add shake animation style
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-10px); }
+                75% { transform: translateX(10px); }
+            }
+        `;
+        document.head.appendChild(style);
+        
         // Initialize game state
         this.state = {
             playerLife: 7,
@@ -412,86 +423,152 @@ const GamePage = {
     handleCombat(attackingCard, defendingCard) {
         console.log(`Combat: ${attackingCard.name} (Color: ${attackingCard.color.value}) vs ${defendingCard.name} (Color: ${defendingCard.color.value})`);
         
+        // Create and play attack animation
+        this.playAttackAnimation(this.state.isPlayerTurn);
+        
         // Get current color values
         const attackerColorValue = attackingCard.color.value;
         const defenderColorValue = defendingCard.color.value;
         
-        // If same color, both are defeated
-        if (attackerColorValue === defenderColorValue) {
-            console.log('Same color - both cards defeated!');
-            this.moveToTomb(attackingCard, this.state.isPlayerTurn);
-            this.moveToTomb(defendingCard, !this.state.isPlayerTurn);
-        }
-        // If attacker has higher color value
-        else if (attackerColorValue > defenderColorValue) {
-            const difference = attackerColorValue - defenderColorValue;
-            const newDefenderValue = defenderColorValue - difference;
-            console.log(`Defender loses ${difference} color points (${defenderColorValue} -> ${newDefenderValue})`);
-            
-            // If defender goes black (0 or less), it's defeated
-            if (newDefenderValue <= 0) {
-                console.log('Defender turned black - defeated!');
-                this.moveToTomb(defendingCard, !this.state.isPlayerTurn);
-            } else {
-                // Update defender's color
-                defendingCard.color = this.getColorForValue(newDefenderValue);
-                // Update the visual representation
-                this.updateChampionZone(this.state.isPlayerTurn ? 'ai' : 'player');
-            }
-        }
-        // If defender has higher color value
-        else {
-            const difference = defenderColorValue - attackerColorValue;
-            const newDefenderValue = defenderColorValue + difference;
-            console.log(`Defender gains ${difference} color points (${defenderColorValue} -> ${newDefenderValue})`);
-            
-            // If defender goes white (7 or more), it's defeated
-            if (newDefenderValue >= 7) {
-                console.log('Defender turned white - defeated!');
-                this.moveToTomb(defendingCard, !this.state.isPlayerTurn);
-            } else {
-                // Update defender's color
-                defendingCard.color = this.getColorForValue(newDefenderValue);
-                // Update the visual representation
-                this.updateChampionZone(this.state.isPlayerTurn ? 'ai' : 'player');
-            }
-        }
-        
-        // Clear any stacked effects
-        this.state.stackedEffects = [];
-        
-        // End combat phase after attack
-        this.state.currentPhase = 'END';
-        this.updateUI();
-        
-        // End turn after a short delay
+        // Delay the combat resolution for animation
         setTimeout(() => {
-            this.endTurn();
-        }, 1000);
+            // If same color, both are defeated
+            if (attackerColorValue === defenderColorValue) {
+                console.log('Same color - both cards defeated!');
+                this.moveToTomb(attackingCard, this.state.isPlayerTurn);
+                this.moveToTomb(defendingCard, !this.state.isPlayerTurn);
+            }
+            // If attacker has higher color value
+            else if (attackerColorValue > defenderColorValue) {
+                const difference = attackerColorValue - defenderColorValue;
+                const newDefenderValue = defenderColorValue - difference;
+                console.log(`Defender loses ${difference} color points (${defenderColorValue} -> ${newDefenderValue})`);
+                
+                // If defender goes black (0 or less), it's defeated
+                if (newDefenderValue <= 0) {
+                    console.log('Defender turned black - defeated!');
+                    this.moveToTomb(defendingCard, !this.state.isPlayerTurn);
+                } else {
+                    // Update defender's color
+                    defendingCard.color = this.getColorForValue(newDefenderValue);
+                    // Update the visual representation
+                    this.updateChampionZone(this.state.isPlayerTurn ? 'ai' : 'player');
+                }
+            }
+            // If defender has higher color value
+            else {
+                const difference = defenderColorValue - attackerColorValue;
+                const newDefenderValue = defenderColorValue + difference;
+                console.log(`Defender gains ${difference} color points (${defenderColorValue} -> ${newDefenderValue})`);
+                
+                // If defender goes white (7 or more), it's defeated
+                if (newDefenderValue >= 7) {
+                    console.log('Defender turned white - defeated!');
+                    this.moveToTomb(defendingCard, !this.state.isPlayerTurn);
+                } else {
+                    // Update defender's color
+                    defendingCard.color = this.getColorForValue(newDefenderValue);
+                    // Update the visual representation
+                    this.updateChampionZone(this.state.isPlayerTurn ? 'ai' : 'player');
+                }
+            }
+            
+            // Clear any stacked effects
+            this.state.stackedEffects = [];
+            
+            // End combat phase after attack
+            this.state.currentPhase = 'END';
+            this.updateUI();
+            
+            // End turn after a short delay
+            setTimeout(() => {
+                this.endTurn();
+            }, 1000);
+        }, 1000); // Wait for attack animation
+    },
+    
+    // Add new method for attack animation
+    playAttackAnimation(isPlayerAttacking) {
+        const attackerZone = isPlayerAttacking ? '.player-champion-zone' : '.ai-champion-zone';
+        const defenderZone = isPlayerAttacking ? '.ai-champion-zone' : '.player-champion-zone';
+        
+        const attackerCard = document.querySelector(`${attackerZone} .card`);
+        const defenderCard = document.querySelector(`${defenderZone} .card`);
+        
+        if (attackerCard && defenderCard) {
+            // Add animation classes
+            attackerCard.style.transition = 'transform 0.5s ease-in-out';
+            defenderCard.style.transition = 'transform 0.5s ease-in-out';
+            
+            // Animate attacker moving forward
+            attackerCard.style.transform = isPlayerAttacking ? 'translateY(-50px)' : 'translateY(50px)';
+            
+            // Shake defender
+            defenderCard.style.animation = 'shake 0.5s ease-in-out';
+            
+            // Reset positions after animation
+            setTimeout(() => {
+                attackerCard.style.transform = '';
+                defenderCard.style.animation = '';
+            }, 500);
+        }
     },
     
     handleDirectAttack(attackingCard) {
         const damage = attackingCard.color.value;
         console.log(`Direct attack with ${attackingCard.name} (Color: ${damage})`);
         
-        if (this.state.isPlayerTurn) {
-            const newAiLife = this.state.aiLife - damage;
-            console.log(`AI life reduced by ${damage} (${this.state.aiLife} -> ${newAiLife})`);
-            this.updateLifeTotal('ai', newAiLife);
-        } else {
-            const newPlayerLife = this.state.playerLife - damage;
-            console.log(`Player life reduced by ${damage} (${this.state.playerLife} -> ${newPlayerLife})`);
-            this.updateLifeTotal('player', newPlayerLife);
-        }
+        // Play attack animation
+        this.playDirectAttackAnimation(this.state.isPlayerTurn);
         
-        // End combat phase after attack
-        this.state.currentPhase = 'END';
-        this.updateUI();
-        
-        // End turn after a short delay
+        // Delay the damage application for animation
         setTimeout(() => {
-            this.endTurn();
-        }, 1000);
+            if (this.state.isPlayerTurn) {
+                const newAiLife = this.state.aiLife - damage;
+                console.log(`AI life reduced by ${damage} (${this.state.aiLife} -> ${newAiLife})`);
+                this.updateLifeTotal('ai', newAiLife);
+            } else {
+                const newPlayerLife = this.state.playerLife - damage;
+                console.log(`Player life reduced by ${damage} (${this.state.playerLife} -> ${newPlayerLife})`);
+                this.updateLifeTotal('player', newPlayerLife);
+            }
+            
+            // End combat phase after attack
+            this.state.currentPhase = 'END';
+            this.updateUI();
+            
+            // End turn after a short delay
+            setTimeout(() => {
+                this.endTurn();
+            }, 1000);
+        }, 1000); // Wait for attack animation
+    },
+    
+    // Add new method for direct attack animation
+    playDirectAttackAnimation(isPlayerAttacking) {
+        const attackerZone = isPlayerAttacking ? '.player-champion-zone' : '.ai-champion-zone';
+        const defenderInfo = isPlayerAttacking ? '.ai-info' : '.player-info';
+        
+        const attackerCard = document.querySelector(`${attackerZone} .card`);
+        const defenderElement = document.querySelector(defenderInfo);
+        
+        if (attackerCard && defenderElement) {
+            // Add animation classes
+            attackerCard.style.transition = 'transform 0.5s ease-in-out';
+            defenderElement.style.transition = 'transform 0.5s ease-in-out';
+            
+            // Animate attacker moving toward opponent
+            attackerCard.style.transform = isPlayerAttacking ? 'translateY(-100px)' : 'translateY(100px)';
+            
+            // Shake defender info
+            defenderElement.style.animation = 'shake 0.5s ease-in-out';
+            
+            // Reset positions after animation
+            setTimeout(() => {
+                attackerCard.style.transform = '';
+                defenderElement.style.animation = '';
+            }, 500);
+        }
     },
     
     // Helper method to get CardColor enum for a value
@@ -944,16 +1021,13 @@ const GamePage = {
                 this.playCard(cardIndex);
             } else if (cardElement.closest('.player-champion-zone') && this.state.isPlayerTurn && this.state.currentPhase === 'COMBAT' && !this.state.firstTurn) {
                 const cardId = cardElement.dataset.cardId;
-                const card = this.state.playerChampionZone.find(c => c.id === cardId);
+                const card = this.state.playerChampionZone[this.state.playerChampionZone.length - 1];
                 if (card && this.state.playerChampionZone.length > 0) {
                     this.handleChampionClick(card, true);
                 }
             } else if (cardElement.closest('.ai-champion-zone') && this.state.selectedCard && this.state.aiChampionZone.length > 0) {
-                const cardId = cardElement.dataset.cardId;
-                const card = this.state.aiChampionZone[this.state.aiChampionZone.length - 1]; // Get top card
-                if (card) {
-                    this.handleOpponentChampionClick(card);
-                }
+                const card = this.state.aiChampionZone[this.state.aiChampionZone.length - 1];
+                this.handleOpponentChampionClick(card);
             }
         });
         
