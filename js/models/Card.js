@@ -84,22 +84,61 @@ class Card {
         return {
             id: this.id,
             name: this.name,
-            baseColor: this.baseColor,
+            baseColor: typeof this.baseColor === 'object' ? this.baseColor.value : this.baseColor,
+            currentColor: typeof this.currentColor === 'object' ? this.currentColor.value : this.currentColor,
             imageNumber: this.imageNumber,
             baseEffects: this.baseEffects,
-            baseEffectDescriptions: this.baseEffectDescriptions
+            currentEffects: this.currentEffects,
+            baseEffectDescriptions: this.baseEffectDescriptions,
+            currentEffectDescriptions: this.currentEffectDescriptions
         };
     }
     
     // Create a card from stored data
     static fromJSON(data) {
-        return new Card(
+        // Map numeric color value to CardColor enum
+        const colorMap = [
+            CardColor.BLACK,   // 0
+            CardColor.RED,     // 1
+            CardColor.ORANGE,  // 2
+            CardColor.YELLOW,  // 3
+            CardColor.GREEN,   // 4
+            CardColor.BLUE,    // 5
+            CardColor.PURPLE,  // 6
+            CardColor.WHITE    // 7
+        ];
+        
+        // Ensure we have numeric values for colors
+        const baseColorValue = typeof data.baseColor === 'object' ? data.baseColor.value : Number(data.baseColor || 0);
+        const currentColorValue = typeof data.currentColor === 'object' ? data.currentColor.value : Number(data.currentColor || baseColorValue);
+        
+        // Ensure values are within bounds
+        const safeBaseColorValue = Math.max(0, Math.min(7, baseColorValue));
+        const safeCurrentColorValue = Math.max(0, Math.min(7, currentColorValue));
+        
+        // Create the card with base color
+        const card = new Card(
             data.name,
-            data.baseColor,
+            colorMap[safeBaseColorValue],
             data.imageNumber,
-            data.baseEffects,
-            data.baseEffectDescriptions
+            data.baseEffects || [],
+            data.baseEffectDescriptions || []
         );
+        
+        // Set current color if different from base
+        if (safeCurrentColorValue !== safeBaseColorValue) {
+            card.currentColor = colorMap[safeCurrentColorValue];
+        }
+        
+        // Set current effects if provided
+        if (data.currentEffects) {
+            card.currentEffects = data.currentEffects;
+        }
+        if (data.currentEffectDescriptions) {
+            card.currentEffectDescriptions = data.currentEffectDescriptions;
+        }
+        
+        return card;
     }
     
     // Create HTML element for the card

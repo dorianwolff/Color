@@ -51,76 +51,208 @@ const GamePage = {
     },
     
     initializeCard(cardData) {
-        // Ensure each card has a proper color object
-        const colorValue = typeof cardData.color === 'number' ? cardData.color : 
-                          cardData.color?.value || Math.floor(Math.random() * 6) + 1;
+        // Debug log to see exact card data format
+        console.log('Initializing card:', {
+            name: cardData.name,
+            rawColor: cardData.color,
+            baseColor: cardData.baseColor,
+            colorType: typeof cardData.color,
+            fullCardData: cardData
+        });
+
+        // Map of numeric values to CardColor enum
+        const colorMap = [
+            CardColor.BLACK,   // 0
+            CardColor.RED,     // 1
+            CardColor.ORANGE,  // 2
+            CardColor.YELLOW,  // 3
+            CardColor.GREEN,   // 4
+            CardColor.BLUE,    // 5
+            CardColor.PURPLE,  // 6
+            CardColor.WHITE    // 7
+        ];
+
+        // Get the color value
+        let colorValue;
         
-        return {
+        // If it's a CardColor enum value (from database)
+        if (cardData.color && typeof cardData.color === 'object' && cardData.color.hasOwnProperty('value')) {
+            colorValue = cardData.color.value;
+            console.log(`Using CardColor enum value for ${cardData.name}:`, colorValue);
+        }
+        // If we have baseColor
+        else if (cardData.baseColor !== undefined) {
+            colorValue = typeof cardData.baseColor === 'object' ? 
+                cardData.baseColor.value : 
+                Number(cardData.baseColor);
+            console.log(`Using baseColor for ${cardData.name}:`, colorValue);
+        }
+        // If it's a direct number
+        else if (typeof cardData.color === 'number' || (typeof cardData.color === 'string' && !isNaN(cardData.color))) {
+            colorValue = Number(cardData.color);
+            console.log(`Using direct numeric color for ${cardData.name}:`, colorValue);
+        }
+        // Fallback to BLACK (0)
+        else {
+            colorValue = 0;
+            console.warn(`Invalid color format for card ${cardData.name}, using BLACK (0). Color data:`, {
+                color: cardData.color,
+                baseColor: cardData.baseColor
+            });
+        }
+
+        // Ensure color value is within bounds
+        colorValue = Math.max(0, Math.min(7, colorValue));
+        
+        // Get the CardColor enum object
+        const color = colorMap[colorValue];
+
+        // Ensure proper image path
+        const imageNumber = cardData.imageNumber !== undefined ? cardData.imageNumber : 
+                          cardData.id ? cardData.id : 
+                          'default';
+        
+        const imagePath = imageNumber === 'default' ? 
+            './images/cards/default.png' : 
+            `./images/cards/${imageNumber}.png`;
+        
+        // Create the card data
+        const initializedCard = {
             ...cardData,
-            color: CardColor.fromValue(colorValue),
+            id: cardData.id || GameUtils.generateUniqueId(),
+            color: color,
+            baseColor: color, // Store the same color object for consistency
             name: cardData.name || 'Unknown Card',
             description: cardData.description || '',
-            // Use relative path for images
-            imagePath: cardData.imageNumber ? `./images/cards/${cardData.imageNumber}.png` : './images/cards/default.png',
-            effects: cardData.effects || []
+            imagePath: imagePath,
+            effects: cardData.effects || [],
+            imageNumber: imageNumber
         };
+
+        // Log the initialized card
+        console.log('Card initialized with color:', {
+            name: initializedCard.name,
+            colorName: initializedCard.color.name,
+            colorValue: initializedCard.color.value,
+            colorClass: initializedCard.color.name.toLowerCase()
+        });
+
+        return initializedCard;
     },
     
     startGame() {
         console.log('[Game] Starting new game');
-        // Get game settings and player data
-        const gameSettings = gameStorage.getGameSettings();
-        const playerData = gameStorage.getUserData();
         
-        // Clear any existing state
-        this.state.playerHand = [];
-        this.state.aiHand = [];
-        this.updateUI();
-
-        // Determine starting player
-        this.state.isPlayerTurn = Math.random() < 0.5;
-        const startingPlayer = this.state.isPlayerTurn ? 'Player' : 'AI';
-        console.log(`[Game] ${startingPlayer} goes first`);
+        // Deep clone and log initial deck states
+        console.log('[Game] Player Deck before shuffle:', this.state.playerDeck.map(card => ({
+            name: card.name,
+            color: {
+                name: card.color.name,
+                value: card.color.value,
+                class: card.color.class
+            },
+            effects: card.effects
+        })));
         
-        // Show starting animation sequence
-        const centerSection = document.querySelector('.center-section');
-        const startingPlayerImg = document.createElement('div');
-        startingPlayerImg.className = 'starting-player-animation';
-        startingPlayerImg.innerHTML = `
-            <img src="${this.state.isPlayerTurn ? (playerData?.avatar || './images/default-avatar.png') : (gameSettings?.aiAvatar || './images/ai/basic.jpg')}" 
-                 alt="${startingPlayer}" class="avatar">
-            <div class="starting-text">${startingPlayer} goes first!</div>
+        console.log('[Game] AI Deck before shuffle:', this.state.aiDeck.map(card => ({
+            name: card.name,
+            color: {
+                name: card.color.name,
+                value: card.color.value,
+                class: card.color.class
+            },
+            effects: card.effects
+        })));
+        
+        // Deep clone cards before shuffling
+        this.state.playerDeck = GameUtils.shuffleArray(
+            this.state.playerDeck.map(card => ({
+                ...card,
+                color: { ...card.color },
+                effects: [...card.effects],
+                baseColor: card.baseColor ? { ...card.baseColor } : undefined
+            }))
+        );
+        
+        this.state.aiDeck = GameUtils.shuffleArray(
+            this.state.aiDeck.map(card => ({
+                ...card,
+                color: { ...card.color },
+                effects: [...card.effects],
+                baseColor: card.baseColor ? { ...card.baseColor } : undefined
+            }))
+        );
+        
+        // Log shuffled deck states
+        console.log('[Game] Player Deck after shuffle:', this.state.playerDeck.map(card => ({
+            name: card.name,
+            color: {
+                name: card.color.name,
+                value: card.color.value,
+                class: card.color.class
+            },
+            effects: card.effects
+        })));
+        
+        console.log('[Game] AI Deck after shuffle:', this.state.aiDeck.map(card => ({
+            name: card.name,
+            color: {
+                name: card.color.name,
+                value: card.color.value,
+                class: card.color.class
+            },
+            effects: card.effects
+        })));
+        
+        // Show starting player animation
+        const startingPlayerName = this.state.isPlayerTurn ? 'Player' : 'AI';
+        console.log(`[Game] ${startingPlayerName} starts the game`);
+        
+        // Create and show the starting player modal
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay starting-player-modal';
+        modal.innerHTML = `
+            <div class="modal starting-player-content">
+                <div class="starting-player-header">
+                    <h2>Game Start!</h2>
+                </div>
+                <div class="starting-player-body">
+                    <div class="starting-player-avatar">
+                        <img src="${this.state.isPlayerTurn ? 
+                            (gameStorage.getUserData().avatar || './images/default-avatar.png') : 
+                            (gameStorage.getGameSettings().aiAvatar || './images/ai/basic.jpg')}" 
+                            alt="${startingPlayerName}" class="avatar">
+                    </div>
+                    <div class="starting-player-text">
+                        <h3>${startingPlayerName} goes first!</h3>
+                    </div>
+                </div>
+            </div>
         `;
-        centerSection.appendChild(startingPlayerImg);
         
+        document.body.appendChild(modal);
+        
+        // Remove the modal after animation
         setTimeout(() => {
-            startingPlayerImg.remove();
-            // Step 2: Draw animation for starting hands
-            this.drawStartingHands().then(() => {
-                // Step 3: Start the game
-                setTimeout(() => {
-                    this.state.currentPhase = GamePhase.DRAW;
-                    this.updateUI();
-                    if (!this.state.isPlayerTurn) {
-                        setTimeout(() => this.handleAITurn(), 500);
-                    } else {
-                        // If it's player's turn, automatically draw a card
-                        this.drawCard('player');
-                    }
-                }, 500);
-            });
+            modal.classList.add('fade-out');
+            setTimeout(() => {
+                modal.remove();
+                // Draw starting hands after modal is removed
+                this.drawStartingHands();
+            }, 500);
         }, 2000);
     },
     
     async drawStartingHands() {
         console.log('[Game] Drawing starting hands');
+        
         const drawCard = async (player, delay) => {
             return new Promise(resolve => {
                 setTimeout(() => {
                     if (player === 'player') {
                         const card = this.state.playerDeck.pop();
                         if (card) {
-                            console.log(`[Player] Drew card: ${card.name}`);
+                            console.log(`[Player] Drew card: ${card.name} (Color: ${card.color.name}, Effects: ${card.effects.join(', ')})`);
                             const cardElement = document.createElement('div');
                             cardElement.className = 'card drawing';
                             cardElement.style.backgroundImage = `url(${card.imagePath})`;
@@ -136,7 +268,7 @@ const GamePage = {
                     } else {
                         const card = this.state.aiDeck.pop();
                         if (card) {
-                            console.log(`[AI] Drew card: ${card.name}`);
+                            console.log(`[AI] Drew card: ${card.name} (Color: ${card.color.name}, Effects: ${card.effects.join(', ')})`);
                             const cardElement = document.createElement('div');
                             cardElement.className = 'card card-back drawing';
                             document.querySelector('.ai-hand').appendChild(cardElement);
@@ -159,24 +291,56 @@ const GamePage = {
             await drawCard('player', 400);
             await drawCard('ai', 400);
         }
+        
+        // Log final hands
+        console.log('[Game] Final Player Hand:', this.state.playerHand.map(card => ({
+            name: card.name,
+            color: card.color.name,
+            effects: card.effects
+        })));
+        
+        console.log('[Game] Final AI Hand:', this.state.aiHand.map(card => ({
+            name: card.name,
+            color: card.color.name,
+            effects: card.effects
+        })));
+        
+        // Start first turn after all cards are drawn
+        setTimeout(() => {
+            this.startTurn();
+        }, 500);
     },
     
     startTurn() {
         if (this.state.gameEnded) return;
         
         const currentPlayer = this.state.isPlayerTurn ? 'player' : 'ai';
-        this.state.currentPhase = GamePhase.DRAW;
-        
-        // Skip draw if deck is empty
-        if (this.state[`${currentPlayer}Deck`].length > 0) {
-            this.drawCard(currentPlayer);
-        }
-        
-        // Update UI
+        this.state.currentPhase = 'DRAW';  // Use string instead of GamePhase.DRAW
+        console.log(`[${currentPlayer.toUpperCase()}] Starting Draw Phase`);
         this.updateUI();
         
-        // If AI's turn, handle it automatically
-        if (!this.state.isPlayerTurn) {
+        if (this.state.isPlayerTurn) {
+            // Player's turn - draw card and transition to champion phase after delay
+            if (this.state.playerDeck.length > 0) {
+                this.drawCard('player');
+                // Ensure transition to champion phase after draw animation
+                setTimeout(() => {
+                    if (this.state.currentPhase === 'DRAW') {
+                        this.state.currentPhase = 'CHAMPION';
+                        console.log('[Player] Starting Champion Phase');
+                        this.updateUI();
+                    }
+                }, 1000);
+            } else {
+                // If no cards to draw, transition to champion phase immediately
+                setTimeout(() => {
+                    this.state.currentPhase = 'CHAMPION';
+                    console.log('[Player] Starting Champion Phase (no cards to draw)');
+                    this.updateUI();
+                }, 1000);
+            }
+        } else {
+            // AI's turn
             this.handleAITurn();
         }
     },
@@ -189,9 +353,8 @@ const GamePage = {
         if (deck.length > 0) {
             const card = deck.pop();
             hand.push(card);
-            console.log(`[${isPlayer ? 'Player' : 'AI'}] Drew card: ${card.name}`);
+            console.log(`[${isPlayer ? 'Player' : 'AI'}] Drew card: ${card.name} (Color: ${card.color.name}, Effects: ${card.effects.join(', ')})`);
             
-            // Create visual card draw animation
             const handContainer = document.querySelector(`.${isPlayer ? 'player' : 'ai'}-hand`);
             if (handContainer) {
                 const cardElement = document.createElement('div');
@@ -201,26 +364,25 @@ const GamePage = {
                 }
                 handContainer.appendChild(cardElement);
                 
-                // Remove drawing class after animation
                 setTimeout(() => {
                     cardElement.classList.remove('drawing');
-                    if (isPlayer && this.state.currentPhase === GamePhase.DRAW) {
-                        // Automatically transition to champion phase after drawing
+                    this.updateUI();
+                    
+                    // Only transition phase for player's turn after draw animation
+                    if (isPlayer && this.state.currentPhase === 'DRAW') {
                         setTimeout(() => {
-                            this.state.currentPhase = GamePhase.CHAMPION;
-                            console.log('[Player] Starting Champion phase');
+                            this.state.currentPhase = 'CHAMPION';
+                            console.log('[Player] Starting Champion Phase');
                             this.updateUI();
-                        }, 500);
+                        }, 600);
                     }
                 }, 400);
             }
         }
-        
-        this.updateUI();
     },
     
     playCard(cardIndex) {
-        if (!this.state.isPlayerTurn || this.state.currentPhase !== GamePhase.CHAMPION) return;
+        if (!this.state.isPlayerTurn || this.state.currentPhase !== 'CHAMPION') return;
         
         const card = this.state.playerHand[cardIndex];
         this.state.playerHand.splice(cardIndex, 1);
@@ -371,75 +533,65 @@ const GamePage = {
         
         // Start next turn
         setTimeout(() => {
-            this.state.currentPhase = GamePhase.DRAW;
-            console.log(`[${this.state.isPlayerTurn ? 'Player' : 'AI'}] Starting turn`);
-            
-            // Draw a card for the new turn
-            const currentPlayer = this.state.isPlayerTurn ? 'player' : 'ai';
-            if (this.state[`${currentPlayer}Deck`].length > 0) {
-                this.drawCard(currentPlayer);
-            }
-            
-            this.updateUI();
-            
-            // If it's AI's turn, handle it
-            if (!this.state.isPlayerTurn) {
-                setTimeout(() => this.handleAITurn(), 500);
-            }
+            // Start the next turn properly using startTurn
+            this.startTurn();
         }, 500);
     },
     
     handleAITurn() {
         if (this.state.isPlayerTurn) return;
-        console.log('AI turn starting');
+        console.log('[AI] Turn starting');
         
-        // Draw phase
-        setTimeout(() => {
-            if (this.state.currentPhase === GamePhase.DRAW) {
-                console.log('AI Draw Phase');
-                // Draw a card if possible
-                if (this.state[`aiDeck`].length > 0) {
+        // Execute phases in sequence using Promises
+        const executeDrawPhase = () => {
+            return new Promise(resolve => {
+                console.log('[AI] Draw Phase');
+                if (this.state.aiDeck.length > 0) {
                     this.drawCard('ai');
                 }
-                this.nextPhase();
-            }
-        }, 500);
+                setTimeout(() => {
+                    this.nextPhase();
+                    resolve();
+                }, 1000);
+            });
+        };
         
-        // Champion phase
-        setTimeout(() => {
-            if (this.state.currentPhase === GamePhase.CHAMPION) {
-                console.log('AI Champion Phase');
-                // Play a random card from hand if possible
+        const executeChampionPhase = () => {
+            return new Promise(resolve => {
+                console.log('[AI] Champion Phase');
                 if (this.state.aiHand.length > 0) {
                     const randomIndex = Math.floor(Math.random() * this.state.aiHand.length);
                     const card = this.state.aiHand[randomIndex];
                     this.state.aiHand.splice(randomIndex, 1);
                     this.state.aiChampionZone.push(card);
+                    this.updateUI();
                 }
-                this.nextPhase();
-            }
-        }, 2000);
+                setTimeout(() => {
+                    this.nextPhase();
+                    resolve();
+                }, 1500);
+            });
+        };
         
-        // Combat phase
-        setTimeout(() => {
-            if (this.state.currentPhase === GamePhase.COMBAT) {
-                console.log('AI Combat Phase');
+        const executeCombatPhase = () => {
+            return new Promise(resolve => {
+                console.log('[AI] Combat Phase');
                 if (!this.state.firstTurn) {
                     this.handleAICombat();
                 } else {
-                    console.log('AI skips combat on first turn');
+                    console.log('[AI] Skips combat on first turn');
                 }
-                this.nextPhase();
-            }
-        }, 3500);
+                setTimeout(() => {
+                    this.endTurn();
+                    resolve();
+                }, 1500);
+            });
+        };
         
-        // End phase
-        setTimeout(() => {
-            if (this.state.currentPhase === GamePhase.END) {
-                console.log('AI End Phase');
-                this.endTurn();
-            }
-        }, 5000);
+        // Execute phases in sequence
+        executeDrawPhase()
+            .then(() => executeChampionPhase())
+            .then(() => executeCombatPhase());
     },
     
     handleAICombat() {
@@ -515,16 +667,52 @@ const GamePage = {
         this.updateChampionZone('ai');
         
         // Log the current phase
-        console.log(`[Phase] ${this.state.isPlayerTurn ? 'Player' : 'AI'}'s ${this.state.currentPhase || 'Starting...'} Phase`);
+        console.log(`[Phase] ${this.state.isPlayerTurn ? 'Player' : 'AI'}'s ${this.state.currentPhase} Phase`);
         
         // Update next phase button
         const nextPhaseBtn = document.querySelector('.next-phase-btn');
         if (nextPhaseBtn) {
-            // Only show the button during player's champion and combat phases
-            nextPhaseBtn.style.display = this.state.isPlayerTurn && 
-                (this.state.currentPhase === GamePhase.CHAMPION || this.state.currentPhase === GamePhase.COMBAT) ? 'block' : 'none';
+            // Button is only clickable during player's Champion and Combat phases
+            const isClickable = this.state.isPlayerTurn && 
+                (this.state.currentPhase === 'CHAMPION' || this.state.currentPhase === 'COMBAT');
+            
+            nextPhaseBtn.disabled = !isClickable;
+            nextPhaseBtn.style.opacity = isClickable ? '1' : '0.6';
+            nextPhaseBtn.style.cursor = isClickable ? 'pointer' : 'default';
+            
+            // Update button text
             if (this.state.currentPhase) {
-                nextPhaseBtn.textContent = `End ${this.state.currentPhase} Phase`;
+                let buttonText;
+                if (this.state.isPlayerTurn) {
+                    switch (this.state.currentPhase) {
+                        case 'DRAW':
+                            buttonText = "Draw Phase";
+                            break;
+                        case 'CHAMPION':
+                            buttonText = "End Champion Phase";
+                            break;
+                        case 'COMBAT':
+                            buttonText = "End Combat Phase";
+                            break;
+                        default:
+                            buttonText = "End Turn";
+                    }
+                } else {
+                    switch (this.state.currentPhase) {
+                        case 'DRAW':
+                            buttonText = "AI Draw Phase";
+                            break;
+                        case 'CHAMPION':
+                            buttonText = "AI Champion Phase";
+                            break;
+                        case 'COMBAT':
+                            buttonText = "AI Combat Phase";
+                            break;
+                        default:
+                            buttonText = "AI Turn";
+                    }
+                }
+                nextPhaseBtn.textContent = buttonText;
             }
         }
         
@@ -546,15 +734,28 @@ const GamePage = {
         
         const hand = this.state[`${player}Hand`];
         
+        // Log hand update
+        console.log(`[Game] Updating ${player} hand:`, hand.map(card => ({
+            name: card.name,
+            color: card.color.name,
+            colorClass: card.color.class.toLowerCase()
+        })));
+        
         handContainer.innerHTML = hand.map((card, index) => `
             <div class="card ${player === 'ai' ? 'card-back' : ''}" 
                  ${player === 'player' ? `style="background-image: url(${card.imagePath})"` : ''}
-                 data-card-index="${index}">
+                 data-card-index="${index}"
+                 data-card-color="${card.color.name.toLowerCase()}">
                 ${player === 'player' ? `
-                    <div class="card-glow glow-${card.color.class}"></div>
+                    <div class="card-glow glow-${card.color.name.toLowerCase()}"></div>
                     <div class="card-effects">
                         <div class="effect-name">${card.name}</div>
                         <div class="effect-description">${card.description || 'No effect'}</div>
+                        ${card.effects.length > 0 ? `
+                            <div class="card-effects-list">
+                                ${card.effects.map(effect => `<div class="effect">${effect}</div>`).join('')}
+                            </div>
+                        ` : ''}
                     </div>
                 ` : ''}
             </div>
@@ -567,11 +768,20 @@ const GamePage = {
         
         const championZone = this.state[`${player}ChampionZone`];
         
+        // Remove all glow classes first
+        zoneContainer.classList.remove('has-champion', 'glow-black', 'glow-red', 'glow-orange', 'glow-yellow', 'glow-green', 'glow-blue', 'glow-purple', 'glow-white');
+        
         if (championZone.length > 0) {
             const card = championZone[championZone.length - 1];
+            
+            // Add glow classes
+            zoneContainer.classList.add('has-champion', `glow-${card.color.name.toLowerCase()}`);
+            
             zoneContainer.innerHTML = `
-                <div class="card" style="background-image: url(${card.imagePath})">
-                    <div class="card-glow glow-${card.color.class}"></div>
+                <div class="card" style="background-image: url(${card.imagePath})"
+                     data-card-id="${card.id}"
+                     data-card-color="${card.color.name.toLowerCase()}">
+                    <div class="card-glow glow-${card.color.name.toLowerCase()}"></div>
                     <div class="card-effects">
                         <div class="effect-name">${card.name}</div>
                         <div class="effect-description">${card.description || 'No effect'}</div>
@@ -592,7 +802,7 @@ const GamePage = {
     },
     
     handleChampionClick(card, isPlayer) {
-        if (!this.state.isPlayerTurn || this.state.currentPhase !== GamePhase.COMBAT) return;
+        if (!this.state.isPlayerTurn || this.state.currentPhase !== 'COMBAT') return;
         
         // Can only use player's champion to attack
         if (!isPlayer) return;
@@ -611,7 +821,7 @@ const GamePage = {
     },
     
     handleOpponentChampionClick(card) {
-        if (!this.state.isPlayerTurn || this.state.currentPhase !== GamePhase.COMBAT || !this.state.selectedCard) return;
+        if (!this.state.isPlayerTurn || this.state.currentPhase !== 'COMBAT' || !this.state.selectedCard) return;
         
         // Handle combat between selected card and opponent's card
         this.handleCombat(this.state.selectedCard, card);
@@ -623,7 +833,7 @@ const GamePage = {
     },
     
     handleOpponentDirectAttack() {
-        if (!this.state.isPlayerTurn || this.state.currentPhase !== GamePhase.COMBAT || !this.state.selectedCard) return;
+        if (!this.state.isPlayerTurn || this.state.currentPhase !== 'COMBAT' || !this.state.selectedCard) return;
         if (this.state.aiChampionZone.length > 0) return; // Can't direct attack if opponent has a champion
         
         this.handleDirectAttack(this.state.selectedCard);
@@ -677,7 +887,7 @@ const GamePage = {
                     <!-- Center Section -->
                     <div class="center-section">
                         <button class="btn btn-primary next-phase-btn">
-                            End Phase
+                            Starting game...
                         </button>
                     </div>
                     
@@ -724,10 +934,10 @@ const GamePage = {
             if (!cardElement) return;
             
             // Handle card clicks based on location and phase
-            if (cardElement.closest('.player-hand') && this.state.isPlayerTurn && this.state.currentPhase === GamePhase.CHAMPION) {
+            if (cardElement.closest('.player-hand') && this.state.isPlayerTurn && this.state.currentPhase === 'CHAMPION') {
                 const cardIndex = Array.from(cardElement.parentNode.children).indexOf(cardElement);
                 this.playCard(cardIndex);
-            } else if (cardElement.closest('.player-champion-zone') && this.state.isPlayerTurn && this.state.currentPhase === GamePhase.COMBAT) {
+            } else if (cardElement.closest('.player-champion-zone') && this.state.isPlayerTurn && this.state.currentPhase === 'COMBAT') {
                 const cardId = cardElement.dataset.cardId;
                 const card = this.state.playerChampionZone.find(c => c.id === cardId);
                 if (card) this.handleChampionClick(card, true);
@@ -765,25 +975,32 @@ const GamePage = {
                 
                 console.log(`[Player] Ending ${this.state.currentPhase} phase`);
                 
+                // Manual phase transition for player
+                let nextPhase;
                 switch (this.state.currentPhase) {
-                    case GamePhase.DRAW:
-                        this.state.currentPhase = GamePhase.CHAMPION;
-                        console.log('[Player] Starting Champion phase');
+                    case 'DRAW':
+                        nextPhase = 'CHAMPION';
                         break;
-                    case GamePhase.CHAMPION:
-                        // Clear stacked effects when leaving champion phase
-                        this.state.stackedEffects = [];
-                        this.state.currentPhase = GamePhase.COMBAT;
-                        console.log('[Player] Starting Combat phase');
+                    case 'CHAMPION':
+                        nextPhase = 'COMBAT';
                         break;
-                    case GamePhase.COMBAT:
-                        this.state.currentPhase = GamePhase.END;
-                        console.log('[Player] Starting End phase');
-                        this.endTurn();
+                    case 'COMBAT':
+                        nextPhase = 'END';
                         break;
+                    default:
+                        nextPhase = 'END';
                 }
                 
-                this.updateUI();
+                if (nextPhase === 'END') {
+                    this.endTurn();
+                } else {
+                    this.state.currentPhase = nextPhase;
+                    if (nextPhase === 'CHAMPION') {
+                        this.state.stackedEffects = [];
+                    }
+                    console.log(`[Player] Starting ${nextPhase} phase`);
+                    this.updateUI();
+                }
             });
         }
     },
@@ -824,25 +1041,31 @@ const GamePage = {
     
     nextPhase() {
         if (!this.state.isPlayerTurn) {
-            console.log(`[AI] Ending ${this.state.currentPhase} phase`);
+            console.log(`[AI] Ending ${this.state.currentPhase} Phase`);
             
+            // Manual phase transition
+            let nextPhase;
             switch (this.state.currentPhase) {
-                case GamePhase.DRAW:
-                    this.state.currentPhase = GamePhase.CHAMPION;
-                    console.log('[AI] Starting Champion phase');
+                case 'DRAW':
+                    nextPhase = 'CHAMPION';
                     break;
-                case GamePhase.CHAMPION:
-                    this.state.stackedEffects = [];
-                    this.state.currentPhase = GamePhase.COMBAT;
-                    console.log('[AI] Starting Combat phase');
+                case 'CHAMPION':
+                    nextPhase = 'COMBAT';
                     break;
-                case GamePhase.COMBAT:
-                    this.state.currentPhase = GamePhase.END;
-                    console.log('[AI] Starting End phase');
+                case 'COMBAT':
+                    nextPhase = 'END';
                     break;
+                default:
+                    nextPhase = 'END';
             }
             
-            this.updateUI();
+            if (nextPhase === 'END') {
+                this.endTurn();
+            } else {
+                this.state.currentPhase = nextPhase;
+                console.log(`[AI] Starting ${nextPhase} Phase`);
+                this.updateUI();
+            }
         }
     }
 };

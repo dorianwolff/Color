@@ -118,7 +118,35 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    position: relative;
+    overflow: visible;
 }
+
+.champion-zone::before {
+    content: '';
+    position: absolute;
+    inset: -20px;
+    border-radius: inherit;
+    background: transparent;
+    z-index: -1;
+    transition: all 0.3s ease;
+    opacity: 0;
+}
+
+.champion-zone.has-champion::before {
+    opacity: 0.4;
+    filter: blur(15px);
+}
+
+/* Color-specific glows for champion zones */
+.champion-zone.glow-black::before { background: radial-gradient(circle at center, var(--card-black) 0%, transparent 70%); }
+.champion-zone.glow-red::before { background: radial-gradient(circle at center, var(--card-red) 0%, transparent 70%); }
+.champion-zone.glow-orange::before { background: radial-gradient(circle at center, var(--card-orange) 0%, transparent 70%); }
+.champion-zone.glow-yellow::before { background: radial-gradient(circle at center, var(--card-yellow) 0%, transparent 70%); }
+.champion-zone.glow-green::before { background: radial-gradient(circle at center, var(--card-green) 0%, transparent 70%); }
+.champion-zone.glow-blue::before { background: radial-gradient(circle at center, var(--card-blue) 0%, transparent 70%); }
+.champion-zone.glow-purple::before { background: radial-gradient(circle at center, var(--card-purple) 0%, transparent 70%); }
+.champion-zone.glow-white::before { background: radial-gradient(circle at center, var(--card-white) 0%, transparent 70%); }
 
 /* Center Section */
 .center-section {
@@ -512,4 +540,84 @@
     0% { box-shadow: 0 0 0 0 var(--primary); }
     70% { box-shadow: 0 0 10px 5px var(--primary); }
     100% { box-shadow: 0 0 0 0 var(--primary); }
+}
+
+/* Starting Player Modal */
+.starting-player-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.5s ease;
+}
+
+.starting-player-modal.fade-out {
+    animation: fadeOut 0.5s ease forwards;
+}
+
+.starting-player-content {
+    background: var(--bg-secondary);
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+    min-width: 300px;
+    transform: scale(1);
+    animation: scaleIn 0.5s ease;
+}
+
+.starting-player-header h2 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+}
+
+.starting-player-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.starting-player-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid var(--primary);
+    animation: pulse 2s infinite;
+}
+
+.starting-player-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.starting-player-text h3 {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.7); }
+    70% { box-shadow: 0 0 0 20px rgba(var(--primary-rgb), 0); }
+    100% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0); }
 } 

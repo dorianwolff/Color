@@ -1,15 +1,15 @@
-class GamePhase {
-    static DRAW = 'DRAW';
-    static PLAY = 'PLAY';
-    static COMBAT = 'COMBAT';
-    static END = 'END';
+const GamePhase = {
+    DRAW: 'DRAW',
+    CHAMPION: 'CHAMPION',
+    COMBAT: 'COMBAT',
+    END: 'END',
     
-    static getDescription(phase) {
+    getDescription(phase) {
         switch (phase) {
             case this.DRAW:
                 return 'Draw Phase - Draw a card from your deck';
-            case this.PLAY:
-                return 'Play Phase - Play cards from your hand';
+            case this.CHAMPION:
+                return 'Champion Phase - Play a champion from your hand';
             case this.COMBAT:
                 return 'Combat Phase - Attack with your champion';
             case this.END:
@@ -17,13 +17,13 @@ class GamePhase {
             default:
                 return 'Unknown Phase';
         }
-    }
+    },
     
-    static getNextPhase(currentPhase) {
+    getNextPhase(currentPhase) {
         switch (currentPhase) {
             case this.DRAW:
-                return this.PLAY;
-            case this.PLAY:
+                return this.CHAMPION;
+            case this.CHAMPION:
                 return this.COMBAT;
             case this.COMBAT:
                 return this.END;
@@ -32,8 +32,34 @@ class GamePhase {
             default:
                 return this.DRAW;
         }
+    },
+    
+    getButtonText(phase, isPlayerTurn) {
+        if (isPlayerTurn) {
+            switch (phase) {
+                case this.DRAW:
+                    return "Draw Phase";
+                case this.CHAMPION:
+                    return "End Champion Phase";
+                case this.COMBAT:
+                    return "End Combat Phase";
+                default:
+                    return "End Turn";
+            }
+        } else {
+            switch (phase) {
+                case this.DRAW:
+                    return "AI Draw Phase";
+                case this.CHAMPION:
+                    return "AI Champion Phase";
+                case this.COMBAT:
+                    return "AI Combat Phase";
+                default:
+                    return "AI Turn";
+            }
+        }
     }
-}
+};
 
-// Make the GamePhase class available globally
+// Make the GamePhase object available globally
 window.GamePhase = GamePhase; 
