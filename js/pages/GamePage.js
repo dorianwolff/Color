@@ -894,16 +894,30 @@ const GamePage = {
         const selectedElement = document.querySelector(`.player-champion-zone .card[data-card-id="${card.id}"]`);
         if (selectedElement) {
             selectedElement.classList.add('selected');
-        }
-        
-        // If AI has no champion, perform direct attack immediately
-        if (this.state.aiChampionZone.length === 0) {
-            this.handleDirectAttack(card);
+            
+            // If AI has no champion, perform direct attack immediately
+            if (this.state.aiChampionZone.length === 0) {
+                this.handleDirectAttack(card);
+            } else {
+                // Add visual indicator that AI champion can be attacked
+                const aiChampion = document.querySelector('.ai-champion-zone .card');
+                if (aiChampion) {
+                    aiChampion.style.cursor = 'pointer';
+                    aiChampion.classList.add('attackable');
+                }
+            }
         }
     },
     
     handleOpponentChampionClick(card) {
         if (!this.state.isPlayerTurn || this.state.currentPhase !== 'COMBAT' || !this.state.selectedCard) return;
+        
+        // Remove attackable indicator
+        const aiChampion = document.querySelector('.ai-champion-zone .card');
+        if (aiChampion) {
+            aiChampion.style.cursor = '';
+            aiChampion.classList.remove('attackable');
+        }
         
         // Handle combat between selected card and opponent's card
         this.handleCombat(this.state.selectedCard, card);
@@ -1020,20 +1034,22 @@ const GamePage = {
                 const cardIndex = Array.from(cardElement.parentNode.children).indexOf(cardElement);
                 this.playCard(cardIndex);
             } else if (cardElement.closest('.player-champion-zone') && this.state.isPlayerTurn && this.state.currentPhase === 'COMBAT' && !this.state.firstTurn) {
-                const cardId = cardElement.dataset.cardId;
                 const card = this.state.playerChampionZone[this.state.playerChampionZone.length - 1];
                 if (card && this.state.playerChampionZone.length > 0) {
                     this.handleChampionClick(card, true);
                 }
-            } else if (cardElement.closest('.ai-champion-zone') && this.state.selectedCard && this.state.aiChampionZone.length > 0) {
+            } else if (cardElement.closest('.ai-champion-zone') && this.state.selectedCard && this.state.aiChampionZone.length > 0 && this.state.isPlayerTurn && this.state.currentPhase === 'COMBAT') {
+                // Get the top card of AI's champion zone
                 const card = this.state.aiChampionZone[this.state.aiChampionZone.length - 1];
-                this.handleOpponentChampionClick(card);
+                if (card) {
+                    this.handleOpponentChampionClick(card);
+                }
             }
         });
         
         // Direct attack handler
         container.addEventListener('click', (e) => {
-            if (e.target.closest('.ai-info') && this.state.selectedCard && this.state.aiChampionZone.length === 0 && !this.state.firstTurn) {
+            if (e.target.closest('.ai-info') && this.state.selectedCard && this.state.aiChampionZone.length === 0 && !this.state.firstTurn && this.state.isPlayerTurn && this.state.currentPhase === 'COMBAT') {
                 this.handleOpponentDirectAttack();
             }
         });
