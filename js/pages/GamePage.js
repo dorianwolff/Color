@@ -673,8 +673,10 @@ const GamePage = {
         const nextPhaseBtn = document.querySelector('.next-phase-btn');
         if (nextPhaseBtn) {
             // Button is only clickable during player's Champion and Combat phases
+            // Except during first turn where Combat phase is auto-skipped
             const isClickable = this.state.isPlayerTurn && 
-                (this.state.currentPhase === 'CHAMPION' || this.state.currentPhase === 'COMBAT');
+                (this.state.currentPhase === 'CHAMPION' || 
+                 (this.state.currentPhase === 'COMBAT' && !this.state.firstTurn));
             
             nextPhaseBtn.disabled = !isClickable;
             nextPhaseBtn.style.opacity = isClickable ? '1' : '0.6';
@@ -692,7 +694,13 @@ const GamePage = {
                             buttonText = "End Champion Phase";
                             break;
                         case 'COMBAT':
-                            buttonText = "End Combat Phase";
+                            buttonText = this.state.firstTurn ? "Skipping Combat (First Turn)" : "End Combat Phase";
+                            // Auto-skip combat on first turn
+                            if (this.state.firstTurn) {
+                                setTimeout(() => {
+                                    this.endTurn();
+                                }, 1500);
+                            }
                             break;
                         default:
                             buttonText = "End Turn";
@@ -887,7 +895,7 @@ const GamePage = {
                     <!-- Center Section -->
                     <div class="center-section">
                         <button class="btn btn-primary next-phase-btn">
-                            Starting game...
+                            Starting Game...
                         </button>
                     </div>
                     
