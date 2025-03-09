@@ -31,7 +31,7 @@ const AISelectorPage = {
                 icon: '⚔️',
                 difficulty: 'HARD',
                 style: 'Strategic',
-                avatar: 'images/avatars/ai-master.jpg'
+                avatar: 'images/ai/hard.jpg'
             }
         ];
 

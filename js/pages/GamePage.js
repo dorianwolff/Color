@@ -7,10 +7,19 @@ const GamePage = {
         const playerData = gameStorage.getUserData();
         const activeDeck = gameStorage.getActiveDeck();
         
+        console.log('Game Settings:', gameSettings);
+        
         if (!activeDeck) {
             alert('No active deck selected!');
             router.navigate(Routes.DECKS);
             return;
+        }
+        
+        // Load AI strategies script if needed
+        if (!window.AIStrategies) {
+            const script = document.createElement('script');
+            script.src = 'js/ai/AIStrategies.js';
+            document.head.appendChild(script);
         }
         
         // Add shake animation style
@@ -41,7 +50,8 @@ const GamePage = {
             gameEnded: false,
             selectedCard: null,
             stackedEffects: [],
-            firstTurn: true
+            firstTurn: true,
+            aiDifficulty: gameSettings.aiDifficulty || 'easy'
         };
         
         // Render initial game state
@@ -656,6 +666,13 @@ const GamePage = {
     handleAITurn() {
         if (this.state.isPlayerTurn) return;
         
+        console.log(`[AI] Taking turn with difficulty: ${this.state.aiDifficulty}`);
+        
+        // Get the appropriate AI strategy based on difficulty
+        const strategy = window.AIStrategies ? 
+            window.AIStrategies.getStrategy(this.state.aiDifficulty) :
+            null;
+        
         // Draw Phase
         if (this.state.aiDeck.length > 0) {
             this.drawCard('ai');
@@ -668,11 +685,30 @@ const GamePage = {
             this.updateUI();
             
             if (this.state.aiHand.length > 0) {
-                const randomIndex = Math.floor(Math.random() * this.state.aiHand.length);
-                const card = this.state.aiHand[randomIndex];
-                this.state.aiHand.splice(randomIndex, 1);
-                this.state.aiChampionZone.push(card);
-                this.updateUI();
+                let cardIndex = -1;
+                
+                // Use strategy if available, otherwise fall back to random
+                if (strategy) {
+                    cardIndex = strategy.selectCardToPlay(
+                        this.state.aiHand, 
+                        this.state.playerChampionZone, 
+                        this.state.aiChampionZone
+                    );
+                } else {
+                    // Default random strategy
+                    cardIndex = Math.floor(Math.random() * this.state.aiHand.length);
+                }
+                
+                // Play the selected card if one was chosen
+                if (cardIndex >= 0 && cardIndex < this.state.aiHand.length) {
+                    const card = this.state.aiHand[cardIndex];
+                    this.state.aiHand.splice(cardIndex, 1);
+                    this.state.aiChampionZone.push(card);
+                    console.log(`[AI] Playing card: ${card.name} (Color: ${card.color.name})`);
+                    this.updateUI();
+                } else {
+                    console.log('[AI] Choosing not to play a card');
+                }
             }
             
             // Combat Phase
@@ -681,7 +717,7 @@ const GamePage = {
                 this.updateUI();
                 
                 if (!this.state.firstTurn && this.state.aiChampionZone.length > 0) {
-                    this.handleAICombat();
+                    this.handleAICombat(strategy);
                 } else {
                     console.log('[AI] Skips combat on first turn');
                     this.endTurn();
@@ -690,7 +726,7 @@ const GamePage = {
         }, 1000);
     },
     
-    handleAICombat() {
+    handleAICombat(strategy) {
         // If AI has no champions, skip combat
         if (this.state.aiChampionZone.length === 0) {
             console.log('[AI] Has no champions to attack with');
@@ -699,15 +735,29 @@ const GamePage = {
         
         // Get the top card of the AI's champion zone
         const attacker = this.state.aiChampionZone[this.state.aiChampionZone.length - 1];
-        console.log(`[AI] Attacking with ${attacker.name} (Color: ${attacker.color.value})`);
+        console.log(`[AI] Considering attack with ${attacker.name} (Color: ${attacker.color.value})`);
         
-        // If player has a champion, attack it
+        // If player has a champion, decide whether to attack it
         if (this.state.playerChampionZone.length > 0) {
             const defender = this.state.playerChampionZone[this.state.playerChampionZone.length - 1];
-            console.log(`[AI] Attacking player's ${defender.name} (Color: ${defender.color.value})`);
-            this.handleCombat(attacker, defender);
+            
+            // Check if AI should attack based on strategy
+            let shouldAttack = true;
+            
+            if (strategy) {
+                shouldAttack = strategy.shouldAttack(attacker, defender);
+                console.log(`[AI] Strategy decision to attack: ${shouldAttack}`);
+            }
+            
+            if (shouldAttack) {
+                console.log(`[AI] Attacking player's ${defender.name} (Color: ${defender.color.value})`);
+                this.handleCombat(attacker, defender);
+            } else {
+                console.log(`[AI] Strategically choosing not to attack`);
+                this.endTurn();
+            }
         } else {
-            // Direct attack if no defenders
+            // Always direct attack if no defenders
             console.log(`[AI] Direct attacking player with ${attacker.name}`);
             this.handleDirectAttack(attacker);
         }
@@ -985,18 +1035,32 @@ const GamePage = {
     },
     
     render(container) {
+        console.log('Rendering game page');
+        
         const gameSettings = gameStorage.getGameSettings();
         const playerData = gameStorage.getUserData();
+        
+        // Get the correct AI avatar based on difficulty
+        let aiAvatar = './images/ai/basic.jpg'; // Default
+        if (this.state.aiDifficulty === 'medium') {
+            aiAvatar = './images/ai/intermediate.jpg';
+        } else if (this.state.aiDifficulty === 'hard') {
+            aiAvatar = './images/ai/hard.jpg';
+        }
+        
+        const aiName = gameSettings.aiName || 
+            (this.state.aiDifficulty === 'hard' ? 'Master AI' : 
+             this.state.aiDifficulty === 'medium' ? 'Tactical AI' : 'Novice AI');
         
         container.innerHTML = `
             <div class="game-container">
                 <div class="game-board">
                     <!-- AI Info -->
                     <div class="player-info ai-info">
-                        <img src="${gameSettings.aiAvatar || './images/ai/basic.jpg'}" alt="AI" class="avatar">
+                        <img src="${aiAvatar}" alt="AI" class="avatar">
                         <div class="player-details">
-                            <div class="player-name">${gameSettings.aiName || 'AI'}</div>
-                            <div class="life-total ai-life">7</div>
+                            <div class="player-name">${aiName}</div>
+                            <div class="life-total ai-life">${this.state.aiLife}</div>
                         </div>
                     </div>
                     
@@ -1004,17 +1068,17 @@ const GamePage = {
                     <div class="game-zones ai-zones">
                         <div class="deck-zone" title="AI's Deck">
                             <div class="card card-back"></div>
-                            <span class="zone-count ai-deck-count">0</span>
+                            <span class="zone-count ai-deck-count">${this.state.aiDeck.length}</span>
                         </div>
                         
                         <div class="hand-zone">
                             <div class="ai-hand"></div>
-                            <span class="zone-count ai-hand-count">0</span>
+                            <span class="zone-count ai-hand-count">${this.state.aiHand.length}</span>
                         </div>
                         
                         <div class="tomb-zone" title="AI's Tomb">
                             <div class="card card-back"></div>
-                            <span class="zone-count ai-tomb-count">0</span>
+                            <span class="zone-count ai-tomb-count">${this.state.aiTombPile.length}</span>
                         </div>
                     </div>
                     
@@ -1035,7 +1099,7 @@ const GamePage = {
                     <div class="game-zones player-zones">
                         <div class="tomb-zone" title="Your Tomb">
                             <div class="card card-back"></div>
-                            <span class="zone-count player-tomb-count">0</span>
+                            <span class="zone-count player-tomb-count">${this.state.playerTombPile.length}</span>
                         </div>
                         
                         <div class="hand-zone">
@@ -1044,7 +1108,7 @@ const GamePage = {
                         
                         <div class="deck-zone" title="Your Deck">
                             <div class="card card-back"></div>
-                            <span class="zone-count player-deck-count">0</span>
+                            <span class="zone-count player-deck-count">${this.state.playerDeck.length}</span>
                         </div>
                     </div>
                     
@@ -1053,7 +1117,7 @@ const GamePage = {
                         <img src="${playerData.avatar || './images/default-avatar.png'}" alt="Player" class="avatar">
                         <div class="player-details">
                             <div class="player-name">${playerData.name || 'Player'}</div>
-                            <div class="life-total player-life">7</div>
+                            <div class="life-total player-life">${this.state.playerLife}</div>
                         </div>
                     </div>
                 </div>
