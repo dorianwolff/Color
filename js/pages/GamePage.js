@@ -26,8 +26,8 @@ const GamePage = {
         
         // Initialize game state
         this.state = {
-            playerLife: 7,
-            aiLife: 7,
+            playerLife: 15,
+            aiLife: 15,
             playerHand: [],
             aiHand: [],
             playerDeck: activeDeck.cards.map(card => this.initializeCard(card)),
@@ -457,6 +457,8 @@ const GamePage = {
                 if (newDefenderValue <= 0) {
                     console.log('Defender turned black - defeated!');
                     this.moveToTomb(defendingCard, !this.state.isPlayerTurn);
+                    this.updateLifeTotal(this.state.isPlayerTurn ? 'ai' : 'player', this.state.isPlayerTurn ? 
+                        this.state.aiLife + newDefenderValue - 1 : this.state.playerLife + newDefenderValue - 1);
                 } else {
                     // Update defender's color
                     defendingCard.color = this.getColorForValue(newDefenderValue);
@@ -474,6 +476,8 @@ const GamePage = {
                 if (newDefenderValue >= 7) {
                     console.log('Defender turned white - defeated!');
                     this.moveToTomb(defendingCard, !this.state.isPlayerTurn);
+                    this.updateLifeTotal(this.state.isPlayerTurn ? 'ai' : 'player', this.state.isPlayerTurn ? 
+                        this.state.aiLife - newDefenderValue + 6 : this.state.playerLife - newDefenderValue + 6);
                 } else {
                     // Update defender's color
                     defendingCard.color = this.getColorForValue(newDefenderValue);

@@ -191,6 +191,7 @@ class Game {
             
             if (CardColor.isOutOfBounds(newValue)) {
                 opponent.moveToTomb(defender);
+                //opponent.changeLife(-(newValue%6));
             }
             
             gameEvents.emit(GameEvents.ATTACK_RESOLVED, {
@@ -207,6 +208,7 @@ class Game {
             
             if (CardColor.isOutOfBounds(newValue)) {
                 opponent.moveToTomb(defender);
+                //opponent.changeLife(newValue);
             }
             
             gameEvents.emit(GameEvents.ATTACK_RESOLVED, {

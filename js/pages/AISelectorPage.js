@@ -11,25 +11,25 @@ const AISelectorPage = {
                 name: 'Novice AI',
                 description: 'A beginner-friendly AI that plays basic strategies.',
                 icon: '🤖',
-                difficulty: 'Easy',
+                difficulty: 'EASY',
                 style: 'Balanced',
-                avatar: 'images/avatars/ai-novice.jpg'
+                avatar: 'images/ai/basic.jpg'
             },
             {
                 id: 'medium',
                 name: 'Tactical AI',
                 description: 'An intermediate AI that employs tactical card combinations.',
                 icon: '🎯',
-                difficulty: 'Medium',
+                difficulty: 'MEDIUM',
                 style: 'Aggressive',
-                avatar: 'images/avatars/ai-tactical.jpg'
+                avatar: 'images/ai/intermediate.jpg'
             },
             {
                 id: 'hard',
                 name: 'Master AI',
                 description: 'An advanced AI that uses complex strategies and card synergies.',
                 icon: '⚔️',
-                difficulty: 'Hard',
+                difficulty: 'HARD',
                 style: 'Strategic',
                 avatar: 'images/avatars/ai-master.jpg'
             }

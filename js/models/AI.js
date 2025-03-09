@@ -86,6 +86,14 @@ AI.opponents = [
         description: 'A simple AI that plays cards randomly.',
         strategy: 'RANDOM'
     },
+    {
+        id: 'intermediate_ai',
+        name: 'Intermediate Bot',
+        avatar: 'images/ai/intermediate.jpg',
+        difficulty: 'MEDIUM',
+        description: 'An ai which plays suboptimally randomly.',
+        strategy: 'INTERMEDIATE'
+    },
     // More AI opponents can be added here
 ];
 
