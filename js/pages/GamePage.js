@@ -405,6 +405,14 @@ const GamePage = {
         const lifeElement = document.querySelector(`.${player}-life`);
         const playerInfo = lifeElement.closest('.player-info');
         
+        // Check if player is losing life and apply shake animation
+        if (newLife < this.state[`${player}Life`]) {
+            playerInfo.classList.add('shake-animation');
+            setTimeout(() => {
+                playerInfo.classList.remove('shake-animation');
+            }, 500);
+        }
+        
         // Update the life total
         this.state[`${player}Life`] = newLife;
         lifeElement.textContent = newLife;
@@ -511,18 +519,17 @@ const GamePage = {
         if (attackerCard && defenderCard) {
             // Add animation classes
             attackerCard.style.transition = 'transform 0.5s ease-in-out';
-            defenderCard.style.transition = 'transform 0.5s ease-in-out';
             
             // Animate attacker moving forward
             attackerCard.style.transform = isPlayerAttacking ? 'translateY(-50px)' : 'translateY(50px)';
             
-            // Shake defender
-            defenderCard.style.animation = 'shake 0.5s ease-in-out';
+            // Shake defender card
+            defenderCard.classList.add('shake-animation');
             
             // Reset positions after animation
             setTimeout(() => {
                 attackerCard.style.transform = '';
-                defenderCard.style.animation = '';
+                defenderCard.classList.remove('shake-animation');
             }, 500);
         }
     },
@@ -568,19 +575,14 @@ const GamePage = {
         if (attackerCard && defenderElement) {
             // Add animation classes
             attackerCard.style.transition = 'transform 0.5s ease-in-out';
-            defenderElement.style.transition = 'transform 0.5s ease-in-out';
             
             // Animate attacker moving toward opponent
             attackerCard.style.transform = isPlayerAttacking ? 'translateY(-100px)' : 'translateY(100px)';
             
-            // Shake defender info
-            defenderElement.style.animation = 'shake 0.5s ease-in-out';
-            
             // Reset positions after animation
             setTimeout(() => {
                 attackerCard.style.transform = '';
-                defenderElement.style.animation = '';
-            }, 500);
+            }, 300);
         }
     },
     
