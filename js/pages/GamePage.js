@@ -692,7 +692,10 @@ const GamePage = {
                     cardIndex = strategy.selectCardToPlay(
                         this.state.aiHand, 
                         this.state.playerChampionZone, 
-                        this.state.aiChampionZone
+                        this.state.aiChampionZone,
+                        this.state.playerLife,
+                        this.state.aiLife,
+                        this.state.firstTurn
                     );
                 } else {
                     // Default random strategy
